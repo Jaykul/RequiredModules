@@ -49,7 +49,9 @@
     RootModule             = 'RequiredModule.psm1'
 
     # Modules that must be imported into the global environment prior to importing this module
-    RequiredModules        = @('Configuration')
+    RequiredModules        = @() # 'Configuration'
+
+    RequiredAssemblies     = @("lib\NuGet.Versioning.dll")
 
     # Always define FunctionsToExport as an empty @() which will be replaced on build
     FunctionsToExport      = @()

@@ -13,15 +13,38 @@
         #>
         [CmdletBinding()]param(
             # The name of the module to find
-            [Parameter(ValueFromPipelineByPropertyName, Mandatory)][string]$Name,
+            [Parameter(ValueFromPipelineByPropertyName, Mandatory)]
+            [string]$Name,
 
             # The VersionRange for valid modules
-            [Parameter(ValueFromPipelineByPropertyName, Mandatory)][VersionRange]$Version
+            [Parameter(ValueFromPipelineByPropertyName, Mandatory)]
+            [VersionRange]$Version,
+
+            # A specific repository to fetch this particular module from
+            [AllowNull()]
+            [Parameter(ValueFromPipelineByPropertyName, Mandatory, ParameterSetName="SpecificRepository")]
+            [string[]]$Repository,
+
+            # Optionally, credentials for the specified repository
+            [AllowNull()]
+            [Parameter(ValueFromPipelineByPropertyName, ParameterSetName="SpecificRepository")]
+            [PSCredential]$Credential
         )
         Write-Progress "Searching PSRepository for '$Name' module with version '$Version'" -Id 1 -ParentId 0
         Write-Verbose  "Searching PSRepository for '$Name' module with version '$Version'"
 
-        $Found = @(Find-Module -Name $Name -AllVersions -Verbose:$false ).Where({
+        $ModuleParam = @{
+            Name = $Name
+            Verbose = $false
+        }
+        if ($Repository) {
+            $ModuleParam["Repository"] = $Repository
+            if ($Credential) {
+                $ModuleParam["Credential"] = $Credential
+            }
+        }
+
+        $Found = @(Find-Module @ModuleParam -AllVersions).Where({
                     ($Version.Float -and $Version.Float.Satisfies($_.Version.ToString())) -or
                     (!$Version.Float -and $Version.Satisfies($_.Version.ToString()))
                 # Find returns modules in Feed and then Version order,

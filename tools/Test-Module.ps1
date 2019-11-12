@@ -1,6 +1,7 @@
 param(
     # The path to a RequiredModules manifest, relative to the project root
-    $ModuleUnderTest = $(Split-Path $PSScriptRoot)
+    $ModuleUnderTest = $(Split-Path $PSScriptRoot),
+    [switch]$SkipCodeCoverage
 )
 
 Push-Location (Split-Path $PSScriptRoot)
@@ -18,8 +19,12 @@ if (-not ($Env:PSModulePath -split ';' -eq $ModulePath)) {
     $Env:PSModulePath = $ModulePath + ';' + $Env:PSModulePath
 }
 
-# Add all the PSM1 Files to the CodeCoverage
-$ModuleUnderTest = Get-ChildItem $ModuleUnderTest -Filter *.psm1 -Recurse | Convert-Path
-Invoke-Pester .\Tests -CodeCoverage $ModuleUnderTest -CodeCoverageOutputFile .\coverage.xml
+if (-not $SkipCodeCoverage) {
+    # Add all the PSM1 Files to the CodeCoverage
+    $ModuleUnderTest = Get-ChildItem $ModuleUnderTest -Filter *.psm1 -Recurse | Convert-Path
+    Invoke-Pester .\Tests -CodeCoverage $ModuleUnderTest -CodeCoverageOutputFile .\coverage.xml
+} else {
+    Invoke-Pester .\Tests
+}
 
 Pop-Location
