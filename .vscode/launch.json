@@ -1,0 +1,34 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "PowerShell",
+            "request": "launch",
+            "name": "Pester w/Code Coverage",
+            "preLaunchTask": "build",
+            "script": "${workspaceFolder}/.vscode/tools/Test-Module.ps1",
+            "args": [
+                "-PesterOption", "@{ IncludeVSCodeMarker = $True }"
+            ],
+            "createTemporaryIntegratedConsole": true
+        },
+        {
+            "type": "PowerShell",
+            "request": "launch",
+            "name": "Pester Current File",
+            "script": "${workspaceFolder}/.vscode/tools/Test-Module.ps1",
+            "args": [
+                "-SkipCodeCoverage",
+                "-Path", "${file}",
+                "-PesterOption", "@{ IncludeVSCodeMarker = $True }"
+            ],
+            "createTemporaryIntegratedConsole": true
+        },
+        {
+            "type": "PowerShell",
+            "request": "launch",
+            "name": "PowerShell Interactive Session",
+            "createTemporaryIntegratedConsole": true
+        },
+    ]
+}
