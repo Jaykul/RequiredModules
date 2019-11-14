@@ -81,4 +81,22 @@ Describe "FindModuleVersion calls Find-Module and filters based on the VersionRa
         $Required.RepositorySourceLocation | Should -Be "https://www.powershellgallery.com/api/v2"
     }
 
+    Describe "When passing credentials" {
+
+        It "Should pass through the credential" {
+            $Required = InModuleScope RequiredModule {
+                [RequiredModule[]]@(
+                    @{ "Configuration" = @{
+                        Version = "[1.0.0,2.0)"
+                        Repository = "https://pkgs.dev.azure.com/poshcode/_packaging/PowerShell/nuget/v2"
+                        Credential = [PSCredential]::new("UserName", (ConvertTo-SecureString "Password" -AsPlainText -Force))
+                    }}
+                 ) | FindModuleVersion
+            }
+
+            $Required.Credential | Should -Not -BeNullOrEmpty
+            $Required.Credential.UserName | Should -Be "UserName"
+            $Required.Credential.GetNetworkCredential().Password | Should -Be "Password"
+        }
+    }
 }
