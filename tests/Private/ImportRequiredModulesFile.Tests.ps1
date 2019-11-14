@@ -14,7 +14,7 @@ Describe "ImportRequiredModulesFile reads metadata files" {
             "Pester"           = "*"
             "PSScriptAnalyzer" = "1.*"
             "ModuleBuilder"    = @{
-                Version = "1.*"
+                Version    = "1.*"
                 Repository = "https://www.powershellgallery.com/api/v2"
             }
         }'

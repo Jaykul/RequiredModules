@@ -1,6 +1,7 @@
 function ImportRequiredModulesFile {
     # Load a requirements file
-    [CmdletBinding()]param(
+    [CmdletBinding()]
+    param(
         $RequiredModulesFile
     )
 
