@@ -22,6 +22,9 @@ function Install-RequiredModule {
         [ValidateSet("CurrentUser", "AllUsers")]
         $Scope = "CurrentUser",
 
+        # Automatically trust all repositories registered on the box
+        [switch]$TrustRegisteredRepositories,
+
         # Suppress normal host information output
         [Switch]$Quiet,
 
@@ -29,7 +32,7 @@ function Install-RequiredModule {
         [Switch]$Import
     )
 
-    if (-Not (Test-Path $RequiredModulesFile -PathType Leaf)) {
+    if ($PSCmdlet.ParameterSetName -like "*FromFile" -And -Not (Test-Path $RequiredModulesFile -PathType Leaf)) {
         $PSCmdlet.WriteError(
             [System.Management.Automation.ErrorRecord]::new(
                 [Exception]::new("RequiredModules file '$($RequiredModulesFile)' not found."),
@@ -38,65 +41,46 @@ function Install-RequiredModule {
         return
     }
 
+
     if ($Destination) {
-        if (-not (Test-Path $Destination -PathType Container)) {
-            New-Item $Destination -ItemType Directory -ErrorAction Stop
-            Write-Verbose "Created Destination directory: $(Convert-Path $Destination)"
-        }
-        # if (-not $CleanDestination) {
-        #     if (Get-ChildItem $Destination) {
-        #         $PSCmdlet.WriteError(
-        #             [System.Management.Automation.ErrorRecord]::new(
-        #                 [Exception]::new("Destination folder '$($Destination)' not empty."),
-        #                 "Destination Not Empty",
-        #                 "ResourceUnavailable", $Destination))
-        #         return
-        #     }
-        # }
-        if ($CleanDestination -and (Get-ChildItem $Destination)) {
-            Write-Warning "CleanDestination specified: Removing $($Destination) and all it's children:"
-            try {
-                Remove-Item $Destination -Recurse -ErrorAction Stop # No -Force -- if this fails, you should handle it yourself
-                New-Item $Destination -ItemType Directory
-            } catch {
-                $PSCmdlet.WriteError(
-                    [System.Management.Automation.ErrorRecord]::new(
-                        [Exception]::new("Failed to clean destination folder '$($Destination)'"),
-                        "Destination Cannot Be Emptied",
-                        "ResourceUnavailable", $Destination))
-                return
-            }
-        }
+        Write-Debug "Using manually specified Destination directory rather than default Scope"
+        AddPSModulePath $Destination -Clean:$CleanDestination
     }
 
     Write-Progress "Verifying PSRepository trust" -Id 1 -ParentId 0
 
-    # Force Policy to Trusted so we can install without prompts and without -Force which is bad
-    # TODO: Add support for all registered PSRepositories
-    if ('Trusted' -ne ($Policy = (Get-PSRepository PSGallery).InstallationPolicy)) {
-        Write-Verbose "Setting PSGallery Trusted"
-        Set-PSRepository PSGallery -InstallationPolicy Trusted
-    }
-
-    if ($Destination) {
-        # make sure we don't do this multiple times
-        $RealDestination = Convert-Path $Destination
-        if (-not (@($Env:PSModulePath.Split([IO.Path]::PathSeparator)) -contains $RealDestination)) {
-            Write-Verbose "Adding $($RealDestination) to PSModulePath"
-            $Env:PSModulePath = $RealDestination + [IO.Path]::PathSeparator + $Env:PSModulePath
+    if ($TrustRegisteredRepositories) {
+        # Force Policy to Trusted so we can install without prompts and without -Force which is bad
+        $OriginalRepositories = Get-PSRepository
+        foreach ($repo in $OriginalRepositories.Where{ $_.InstallationPolicy -ne "Trusted" }) {
+            Write-Verbose "Setting $($repo.Name) Trusted"
+            Set-PSRepository $repo.Name -InstallationPolicy Trusted
         }
     }
-
     try {
-        ImportRequiredModulesFile $RequiredModulesFile -OV Modules |
+        $(  # For all the modules they want to install
+            switch -Wildcard ($PSCmdlet.ParameterSetName) {
+                "*FromFile" {
+                    ImportRequiredModulesFile $RequiredModulesFile -OV Modules
+                }
+                "FromHash"  {
+                    ConvertToRequiredModule $RequiredModules
+                }
+            }
+        ) |
+            # Which do not already have a valid version installed
             Where-Object { -not ($_ | GetModuleVersion -Destination:$RealDestination -WarningAction SilentlyContinue) } |
+            # Find a version on the gallery
             FindModuleVersion |
-            InstallModuleVersion -Destination:$RealDestination -ErrorVariable InstallErrors
+            # And install it
+            InstallModuleVersion -Destination:$RealDestination -Scope:$Scope -ErrorVariable InstallErrors
     } finally {
-        # Put Policy back so we don't needlessly change environments permanently
-        if ('Trusted' -ne $Policy) {
-            Write-Verbose "Setting PSGallery Untrusted"
-            Set-PSRepository PSGallery -InstallationPolicy $Policy
+        if ($TrustRegisteredRepositories) {
+            # Put Policy back so we don't needlessly change environments permanently
+            foreach ($repo in $OriginalRepositories.Where{ $_.InstallationPolicy -ne "Trusted" }) {
+                Write-Verbose "Setting $($repo.Name) back to $($repo.InstallationPolicy)"
+                Set-PSRepository $repo.Name -InstallationPolicy $repo.InstallationPolicy
+            }
         }
     }
     Write-Progress "Importing Modules" -Id 1 -ParentId 0

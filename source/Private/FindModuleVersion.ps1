@@ -31,35 +31,42 @@ filter FindModuleVersion {
         [Parameter(ValueFromPipelineByPropertyName, ParameterSetName="SpecificRepository")]
         [PSCredential]$Credential
     )
-    Write-Progress "Searching PSRepository for '$Name' module with version '$Version'" -Id 1 -ParentId 0
-    Write-Verbose  "Searching PSRepository for '$Name' module with version '$Version'"
-
-    $ModuleParam = @{
-        Name = $Name
-        Verbose = $false
+    begin {
+        $Trusted = Get-PSRepository | Where-Object { $_.InstallationPolicy -eq "Trusted" }
     }
-    if ($Repository) {
-        $ModuleParam["Repository"] = $Repository
-        if ($Credential) {
-            $ModuleParam["Credential"] = $Credential
+    process {
+        Write-Progress "Searching PSRepository for '$Name' module with version '$Version'" -Id 1 -ParentId 0
+        Write-Verbose  "Searching PSRepository for '$Name' module with version '$Version'"
+
+        $ModuleParam = @{
+            Name = $Name
+            Verbose = $false
         }
-    }
+        if ($Repository) {
+            $ModuleParam["Repository"] = $Repository
+            if ($Credential) {
+                $ModuleParam["Credential"] = $Credential
+            }
+        }
 
-    $Found = @(Find-Module @ModuleParam -AllVersions).Where({
+        $Found = @(Find-Module @ModuleParam -AllVersions).Where( {
                 ($Version.Float -and $Version.Float.Satisfies($_.Version.ToString())) -or
                 (!$Version.Float -and $Version.Satisfies($_.Version.ToString()))
-            # Find returns modules in Feed and then Version order,
-            # so you're not necessarily getting the highest valid version,
-            # but rather the _first_ valid version (as usual)
-            }, "First", 1)
+                # Find returns modules in Feed and then Version order
+                # We sort to put the ones from trusted repositories at the top
+            }) | Sort-Object { $_.Repository -notin $Trusted.Name } |
+            # You're not necessarily getting the highest valid version,
+            # But rather the first valid version from a trusted source (if there is one)
+            Select-Object -First 1
 
-    if (-not $Found) {
-        Write-Warning "Unable to resolve dependency '$Name' with version '$Version'"
-    } else {
-        Write-Verbose "Found '$Name' available with version '$($Found.Version)'"
-        if($Credential) { # if we have credentials, we're going to need to pass them through ...
-            $Found | Add-Member -NotePropertyName Credential -NotePropertyValue $Credential
+        if (-not $Found) {
+            Write-Warning "Unable to resolve dependency '$Name' with version '$Version'"
+        } else {
+            Write-Verbose "Found '$Name' available with version '$($Found.Version)'"
+            if($Credential) { # if we have credentials, we're going to need to pass them through ...
+                $Found | Add-Member -NotePropertyName Credential -NotePropertyValue $Credential
+            }
+            $Found
         }
-        $Found
     }
 }

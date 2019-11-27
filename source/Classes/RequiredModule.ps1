@@ -24,7 +24,7 @@ class RequiredModule {
         $this.Repository = $Repository
     }
 
-    # The most complicated dependency includes credentials for that specific repository (how?)
+    # The most complicated dependency includes credentials for that specific repository
     RequiredModule([string]$Name, [VersionRange]$Version, [string]$Repository, [PSCredential]$Credential) {
         $this.Name = $Name
         $this.Version = $Version
@@ -62,7 +62,7 @@ class RequiredModule {
                     $this.Credential = $_.Value
                 }
                 default {
-                    throw [ArgumentException]::new($_.Key, "Unrecognized key '$($_.Key)' in module contraints")
+                    throw [ArgumentException]::new($_.Key, "Unrecognized key '$($_.Key)' in module constraints for '$($_.Name)'")
                 }
             }
         } else {
@@ -70,32 +70,9 @@ class RequiredModule {
         }
     }
 
-    # This is a simple constructor wrapping a single dictionary entry
+    # This is a cast constructor supporting casting a dictionary entry to RequiredModule
+    # It's used that way in ConvertToRequiredModule and thus in ImportRequiredModulesFile
     RequiredModule([System.Collections.DictionaryEntry]$Data) {
         $this.Update($Data)
-    }
-
-    # This constructor allows using RequiredModule as a cast operator for a hashtable with a single dependency in it:
-    # [RequiredModule]@{ "ModuleName" = @{ Ver = '2.1'; Repo = 'PSGallery' }}
-    RequiredModule([System.Collections.IDictionary]$Data) {
-        if ($Data.Count -ne 1) {
-            throw [ArgumentOutOfRangeException]::new("Data", "Can't convert dictionaries with more than one entry to RequiredModule")
-        } else {
-            $this.Update(@($Data.GetEnumerator())[0])
-        }
-    }
-
-    # This allows parsing a full dictionary of dependencies
-    [RequiredModule[]] Convert([System.Collections.IDictionary]$Data) {
-        return $Data.GetEnumerator().ForEach([RequiredModule])
-    }
-
-    # This allows parsing a file with a dictionary in it:
-    [RequiredModule[]] Load([string]$RequiredModulesFile) {
-        $LocalizedData = @{
-            BaseDirectory = [IO.Path]::GetDirectoryName($RequiredModulesFile)
-            FileName      = [IO.Path]::GetFileName($RequiredModulesFile)
-        }
-        return Convert(Import-LocalizedData @LocalizedData);
     }
 }

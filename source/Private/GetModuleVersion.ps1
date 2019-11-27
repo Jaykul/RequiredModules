@@ -14,13 +14,16 @@ filter GetModuleVersion {
     [CmdletBinding(DefaultParameterSetName = "Unrestricted")]
     param(
         # A specific Module install folder to search
-        [AllowNull()][string]$Destination,
+        [AllowNull()]
+        [string]$Destination,
 
         # The name of the module to find
-        [Parameter(ValueFromPipelineByPropertyName, Mandatory)][string]$Name,
+        [Parameter(ValueFromPipelineByPropertyName, Mandatory)]
+        [string]$Name,
 
         # The VersionRange for valid modules
-        [Parameter(ValueFromPipelineByPropertyName, Mandatory)][VersionRange]$Version
+        [Parameter(ValueFromPipelineByPropertyName, Mandatory)]
+        [VersionRange]$Version
     )
     Write-Progress "Searching PSModulePath for '$Name' module with version '$Version'" -Id 1 -ParentId 0
     Write-Verbose  "Searching PSModulePath for '$Name' module with version '$Version'"

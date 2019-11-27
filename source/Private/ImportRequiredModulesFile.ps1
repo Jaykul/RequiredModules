@@ -1,8 +1,14 @@
-function ImportRequiredModulesFile {
-    # Load a requirements file
+filter ImportRequiredModulesFile {
+    <#
+        .SYNOPSIS
+            Load a file defining one or more RequiredModules
+    #>
+    [Output([RequiredModule])]
     [CmdletBinding()]
     param(
-        $RequiredModulesFile
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [Alias("Path", "PSPath")]
+        [string]$RequiredModulesFile
     )
 
     $RequiredModulesFile = Convert-Path $RequiredModulesFile
@@ -12,7 +18,5 @@ function ImportRequiredModulesFile {
         BaseDirectory = [IO.Path]::GetDirectoryName($RequiredModulesFile)
         FileName = [IO.Path]::GetFileName($RequiredModulesFile)
     }
-    (Import-LocalizedData @LocalizedData).GetEnumerator().ForEach({
-        [RequiredModule[]]$_
-    })
+    Import-LocalizedData @LocalizedData | ConvertToRequiredModule
 }
