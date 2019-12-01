@@ -28,7 +28,7 @@ function Install-RequiredModule {
         # Suppress normal host information output
         [Switch]$Quiet,
 
-        # If set, the modules are download or installed but not imported
+        # If set, the specififed modules are imported (after they are installed, if necessary)
         [Switch]$Import
     )
 

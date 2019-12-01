@@ -3,7 +3,7 @@ filter ConvertToRequiredModule {
         .SYNOPSIS
             Allows converting a full hashtable of dependencies
     #>
-    [Output([RequiredModule])]
+    [OutputType([RequiredModule])]
     [CmdletBinding()]
     param(
         # A hashtable of RequiredModules
