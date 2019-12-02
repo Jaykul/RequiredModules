@@ -2,7 +2,7 @@ param(
     [switch]$SkipCodeCoverage,
     [switch]$HideSuccess,
     [string]$Path,
-    $PesterOption = @{}
+    $PesterOption = @{ IncludeVSCodeMarker = $true }
 )
 
 Push-Location $PSScriptRoot\..\..

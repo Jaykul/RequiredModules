@@ -21,7 +21,7 @@
             "presentation": {
                 "echo": true,
                 "reveal": "silent",
-                "revealProblem": "onProblem",
+                "revealProblems": "onProblem",
                 "focus": false,
                 "panel": "shared",
                 "showReuseMessage": true,
@@ -39,6 +39,7 @@
             "options": {
                 "cwd": "${workspaceFolder}"
             },
+            "problemMatcher": "$pester",
             "presentation": {
                 "echo": true,
                 "reveal": "always",
