@@ -26,13 +26,13 @@ Describe "GetModuleVersion calls Get-Module and filters based on the VersionRang
                     }
                 }
             }
-        ) | Sort-Object ModuleFolder, Name, {[Version]$_.Version}
+        ) | Sort-Object ModuleFolder, Name, {[Version]$_.Version} -Desc
     }
 
     # The hashtable scope-escape hack for pester
     $Result = @{ }
 
-    It "FindModuleVersion limits the output of Get-Module" {
+    It "GetModuleVersion limits the output of Get-Module" {
         Set-Content TestDrive:\RequiredModules.psd1 '@{
             "PowerShellGet"    = "1.0.0"
             "Configuration"    = "[1.0.0,2.0)"
@@ -42,7 +42,8 @@ Describe "GetModuleVersion calls Get-Module and filters based on the VersionRang
             }
         }'
 
-        $Result["Output"] = InModuleScope RequiredModule { ImportRequiredModulesFile TestDrive:\RequiredModules.psd1 | GetModuleVersion }
+        $Result["Output"] = InModuleScope RequiredModule { ImportRequiredModulesFile TestDrive:\RequiredModules.psd1 | GetModuleVersion -Verbose }
+        $Result["Output"].Count | Should -Be 3
     }
 
     # unstuffing the hack
@@ -71,18 +72,4 @@ Describe "GetModuleVersion calls Get-Module and filters based on the VersionRang
         $Required.Count | Should -Be 1
         $Required.Version | Should -Be "2.2.4"
     }
-
-    It "Returns the first result (regardless of source) if the repository isn't specified" {
-        $Required = $Result.Where{ $_.Name -eq "PowerShellGet" }
-        $Required.RepositorySourceLocation | Should -Be "https://pkgs.dev.azure.com/poshcode/_packaging/PowerShell/nuget/v2"
-
-        $Required = $Result.Where{ $_.Name -eq "Configuration" }
-        $Required.RepositorySourceLocation | Should -Be "https://pkgs.dev.azure.com/poshcode/_packaging/PowerShell/nuget/v2"
-    }
-
-    It "Filters the result to a specific location when the repository is specified" {
-        $Required = $Result.Where{ $_.Name -eq "ModuleBuilder" }
-        $Required.RepositorySourceLocation | Should -Be "https://www.powershellgallery.com/api/v2"
-    }
-
 }

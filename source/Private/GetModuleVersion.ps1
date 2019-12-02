@@ -28,11 +28,13 @@ filter GetModuleVersion {
     Write-Progress "Searching PSModulePath for '$Name' module with version '$Version'" -Id 1 -ParentId 0
     Write-Verbose  "Searching PSModulePath for '$Name' module with version '$Version'"
     $Found = @(Get-Module $Name -ListAvailable -Verbose:$false).Where({
-        (!$Destination -or $_.ModuleBase.ToUpperInvariant().StartsWith($Destination.ToUpperInvariant())) -and
+        $Valid = (!$Destination -or $_.ModuleBase.ToUpperInvariant().StartsWith($Destination.ToUpperInvariant())) -and
         (
             ($Version.Float -and $Version.Float.Satisfies($_.Version.ToString())) -or
             (!$Version.Float -and $Version.Satisfies($_.Version.ToString()))
         )
+        Write-Verbose "$($_.Name) $($_.Version) $Valid"
+        $Valid
         # Get returns modules in PSModulePath and then Version order,
         # so you're not necessarily getting the highest valid version,
         # but rather the _first_ valid version (as usual)
