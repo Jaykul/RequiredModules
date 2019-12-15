@@ -1,8 +1,28 @@
 # Install Required Modules for PowerShell Development Projects
 
-This repository is for the `Install-RequiredModule` script which provides an early prototype of the RequiredResources functionality from the [PowerShellGet 3 RFC](https://github.com/PowerShell/PowerShell-RFC/blob/cc293e7d9c8bf7b01da7b051f73cb2af0691c9ae/2-Draft-Accepted/RFCxxxx-PowerShellGet-3.0.md)
+This repository is for the `Install-RequiredModule` script you can find on the PowerShell Gallery. It was meant as a tool for developers, so you can put a `RequiredModules.psd1` file in a repository and in just two steps, install all of the modules you need, whether interactively on a dev box, or in a CI build script:
 
-I'm working on a re-write to support arbitrary repositories (i.e. so you can use it with your artifact feeds on Azure DevOps or GitHub) and this version is not yet ready, nor does it have a packaging `build` script, but I'm sharing it now anyway.
+
+```PowerShell
+Install-Script Install-RequiredModule
+Install-RequiredModule
+```
+
+The `Install-RequiredModule` command parses a hashtable from a file (named `RequiredModules.psd1` by default, but you can pass a path to any file name) or on the command-line. The format of the RequiredModules hashtable specifies the module name and version, using [NuGet's version range syntax](https://docs.microsoft.com/en-us/nuget/concepts/package-versioning#version-ranges-and-wildcards). It also supports specifying the repository (either the URL or the registered name). Some examples:
+
+```PowerShell
+@{
+    "PowerShellGet"    = "1.0.0"
+    "Configuration"    = "[1.0.0,2.0)"
+    "ModuleBuilder"    = @{
+        Version = "2.*"
+        Repository = "https://www.powershellgallery.com/api/v2"
+    }
+}
+```
+
+> NOTE: We're using NuGet's syntax for version ranges because the PowerShell Gallery uses NuGet, and PowerShellGet wraps it. Their versions use square braces to mean matches including the number, and round parenthesis to exclude it. There's support for wildcards and ranges, etc. See [NuGet's documentation](https://docs.microsoft.com/en-us/nuget/concepts/package-versioning#version-ranges-and-wildcards) for more details.
+
 
 ## Contributing
 

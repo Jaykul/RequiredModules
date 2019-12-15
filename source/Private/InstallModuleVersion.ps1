@@ -42,12 +42,13 @@ filter InstallModuleVersion {
     )
     Write-Progress "Installing module '$($Name)' with version '$($Version)' from the PSGallery"
     Write-Verbose "Installing module '$($Name)' with version '$($Version)' from the PSGallery"
+    Write-Verbose "ConfirmPreference: $ConfirmPreference"
     $ModuleOptions = @{
         Name               = $Name
         RequiredVersion    = $Version
 
         Verbose            = $VerbosePreference -eq "Continue"
-        Confirm            = $ConfirmPreference -ne "None"
+        Confirm            = $ConfirmPreference -eq "Low"
         ErrorAction        = "Stop"
         Scope              = $Scope
     }

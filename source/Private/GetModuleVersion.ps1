@@ -33,7 +33,7 @@ filter GetModuleVersion {
             ($Version.Float -and $Version.Float.Satisfies($_.Version.ToString())) -or
             (!$Version.Float -and $Version.Satisfies($_.Version.ToString()))
         )
-        Write-Verbose "$($_.Name) $($_.Version) $Valid"
+        Write-Verbose "$($_.Name) $($_.Version) $(if ($Valid) {"Valid"} else {"Wrong"}) - $($_.ModuleBase)"
         $Valid
         # Get returns modules in PSModulePath and then Version order,
         # so you're not necessarily getting the highest valid version,
