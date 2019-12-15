@@ -62,7 +62,7 @@ filter FindModuleVersion {
             Write-Warning "Unable to resolve dependency '$Name' with version '$Version'"
         } else {
             # Because we can't trust sorting in PS 5, we need to try checking for
-            if (!($Single = $Found.Where({ $_.RepositorySourceLocation -in $Trusted.SourceLocation }, "First", 1))) {
+            if (!($Single = @($Found).Where({ $_.RepositorySourceLocation -in $Trusted.SourceLocation }, "First", 1))) {
                 $Single = $Found[0]
                 Write-Warning "Dependency '$Name' with version '$($Single.Version)' found in untrusted repository $($Single.Repository) ($($Single.RepositorySourceLocation))"
             } else {
