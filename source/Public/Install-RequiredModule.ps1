@@ -1,5 +1,5 @@
 function Install-RequiredModule {
-    [CmdletBinding(DefaultParameterSetName = "FromFile", SupportsShouldProcess = $true, ConfirmImpact = "High")]
+    [CmdletBinding(DefaultParameterSetName = "FromHash", SupportsShouldProcess = $true, ConfirmImpact = "High")]
     param(
         # The path to a metadata file listing required modules. Defaults to "RequiredModules.psd1" (in the current working directory).
         [Parameter(Position = 0, ParameterSetName = "FromFile")]
@@ -64,7 +64,7 @@ function Install-RequiredModule {
                     ImportRequiredModulesFile $RequiredModulesFile -OV Modules
                 }
                 "FromHash"  {
-                    ConvertToRequiredModule $RequiredModules
+                    ConvertToRequiredModule $RequiredModules -OV Modules
                 }
             }
         ) |
