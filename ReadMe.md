@@ -24,6 +24,23 @@ The `Install-RequiredModule` command parses a hashtable from a file (named `Requ
 > NOTE: We're using NuGet's syntax for version ranges because the PowerShell Gallery uses NuGet, and PowerShellGet wraps it. Their versions use square braces to mean matches including the number, and round parenthesis to exclude it. There's support for wildcards and ranges, etc. See [NuGet's documentation](https://docs.microsoft.com/en-us/nuget/concepts/package-versioning#version-ranges-and-wildcards) for more details.
 
 
+## Latest Changes
+
+This version allows installing from any trusted repository! In this version, we no longer only (and automatically) use PSGallery. Instead, you must ensure that there is a repository registered and trusted, and we'll use whatever repostories you have trusted.
+
+For instance, you could ensure the default PSGallery is registered, and trust it:
+
+```PowerShell
+Register-PSRepository -Default -ErrorAction Ignore -InstallationPolicy Trusted
+Get-PSRepository -Name PSGallery | Set-PSRepository -InstallationPolicy Trusted
+```
+
+By default, we only install from trusted repositories, but there is a new TrustRegisteredRepositories switch which ensures all of the repositories that are registered are treated as trusted for the purposes of installing the required modules.
+
+There is a new syntax for the RequiredModules hashtables to support specifying a specific repository for each module.
+
+Remember, Install-RequiredModule does not explicitly require PowerShellGet. PowerShell 5+ automatically include a version of it, and we assume that you're using it to install this script. If you need a higher version (which you very well may) you should put it in your RequiredModules manifest.
+
 ## Contributing
 
 This project is MIT licensed and I'm happy to accept PRs, feature requests or bug reports.
