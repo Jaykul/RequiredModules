@@ -46,7 +46,9 @@ filter InstallModuleVersion {
     $ModuleOptions = @{
         Name               = $Name
         RequiredVersion    = $Version
-
+        # Allow pre-release because we're always specifying a REQUIRED version
+        # If the required version is a pre-release, then we want to allow that
+        AllowPrerelease    = $true
         Verbose            = $VerbosePreference -eq "Continue"
         Confirm            = $ConfirmPreference -eq "Low"
         ErrorAction        = "Stop"

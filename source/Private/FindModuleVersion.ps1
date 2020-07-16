@@ -21,6 +21,9 @@ filter FindModuleVersion {
         [Parameter(ValueFromPipelineByPropertyName, Mandatory)]
         [VersionRange]$Version,
 
+        # Set to allow pre-release versions (defaults to tru if either the minimum or maximum are a pre-release, false otherwise)
+        [switch]$AllowPrerelease = $($Version.MinVersion.IsPreRelease, $Version.MaxVersion.IsPreRelease -contains $True),
+
         # A specific repository to fetch this particular module from
         [AllowNull()]
         [Parameter(ValueFromPipelineByPropertyName, Mandatory, ParameterSetName="SpecificRepository")]
@@ -41,6 +44,7 @@ filter FindModuleVersion {
         $ModuleParam = @{
             Name = $Name
             Verbose = $false
+            AllowPrerelease = $AllowPrerelease
         }
         if ($Repository) {
             $ModuleParam["Repository"] = $Repository
