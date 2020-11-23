@@ -1,6 +1,6 @@
 @{
     # The module version should be SemVer.org compatible
-    ModuleVersion          = "4.1.1"
+    ModuleVersion          = "5.0.0"
 
     # PrivateData is where all third-party metadata goes
     PrivateData            = @{

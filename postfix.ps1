@@ -1,4 +1,0 @@
-}
-end {
-    Install-RequiredModule @PSBoundParameters
-}
