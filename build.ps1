@@ -25,27 +25,26 @@ if (-not $Semver -and (Get-Command gitversion -ErrorAction SilentlyContinue)) {
 try {
     # Build new output
     $ParameterString = $PSBoundParameters.GetEnumerator().ForEach{ '-' + $_.Key + " '" + $_.Value + "'" } -join " "
-    Write-Verbose "Build-Module Source\build.psd1 $($ParameterString) -Target CleanBuild"
+    Write-Verbose "Build-Module Source/build.psd1 $($ParameterString) -Target CleanBuild"
 
-    Build-Module source\build.psd1 @PSBoundParameters -Target CleanBuild -Passthru -OutVariable BuildOutput | Split-Path
+    Build-Module source/build.psd1 @PSBoundParameters -Target CleanBuild -Passthru -OutVariable BuildOutput | Split-Path
     Write-Verbose "Module build output in $($BuildOutput.Path)"
 
     # Pack the psm1 and lib into a script
-    $Lib = Split-Path $BuildOutput.Path | Join-Path -ChildPath lib/NuGet.Versioning.dll | Convert-Path
-    [byte[]]$UncompressedFileBytes = [IO.File]::ReadAllBytes($Lib)
-    # Since this is all backed by a memory stream, there's really nothing to dispose of
-    $DeflateStream = [IO.Compression.DeflateStream]::new([IO.MemoryStream]::new(), [IO.Compression.CompressionMode]::Compress)
-    $DeflateStream.Write($UncompressedFileBytes, 0, $UncompressedFileBytes.Length)
-    $EncodedCompressedFile = [Convert]::ToBase64String($DeflateStream.BaseStream.ToArray())
-
-    $ScriptPath = Split-Path $BuildOutput.Path | Join-Path -Child "Install-RequiredModule.ps1"
+    Import-Module "$PSScriptRoot\pack.psm1"
     $ModulePath = [IO.Path]::ChangeExtension($BuildOutput.Path, ".psm1")
+    $AssemblyPath = Split-Path $BuildOutput.Path | Join-Path -Child "lib/NuGet.Versioning.dll"
+    $ScriptPath = Split-Path $BuildOutput.Path | Join-Path -Child "Install-RequiredModule.ps1"
 
-    $Content = Get-Content $ModulePath
-    $Content = $Content -replace 'throw "You must import Nuget.Versioning"', "`$EncodedCompressedFile = '$EncodedCompressedFile'"
-    $Content = $Content -replace '<#NuGetVersioningSize#>', $UncompressedFileBytes.Length
-    $Content += "Install-RequiredModule @PSBoundParameters"
-    $Content | Set-Content $ScriptPath
+    Set-Content $ScriptPath @(
+        Get-Content $PSScriptRoot/Source/ScriptHeader.ps1
+        Compress-ToString $AssemblyPath, $ModulePath
+        "Install-RequiredModule @PSBoundParameters"
+    )
+
+    Write-Verbose "Script compiled to $($ScriptPath)"
+    $ModuleInfo = @(Get-Module $BuildOutput -ListAvailable)[0]
+    Update-ScriptFileInfo $ScriptPath -Version $ModuleInfo.Version -Author $ModuleInfo.Author -CompanyName $ModuleInfo.CompanyName -Copyright $ModuleInfo.Copyright -Tags $ModuleInfo.Tags -ProjectUri $ModuleInfo.ProjectUri -LicenseUri $ModuleInfo.LicenseUri -IconUri $ModuleInfo.IconUri -ReleaseNotes $ModuleInfo.ReleaseNotes
 
 } finally {
     Pop-Location -StackName BuildModule

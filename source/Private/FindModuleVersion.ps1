@@ -19,7 +19,7 @@ filter FindModuleVersion {
 
         # The VersionRange for valid modules
         [Parameter(ValueFromPipelineByPropertyName, Mandatory)]
-        [VersionRange]$Version,
+        [NuGet.Versioning.VersionRange]$Version,
 
         # Set to allow pre-release versions (defaults to tru if either the minimum or maximum are a pre-release, false otherwise)
         [switch]$AllowPrerelease = $($Version.MinVersion.IsPreRelease, $Version.MaxVersion.IsPreRelease -contains $True),
@@ -44,7 +44,12 @@ filter FindModuleVersion {
         $ModuleParam = @{
             Name = $Name
             Verbose = $false
-            AllowPrerelease = $AllowPrerelease
+        }
+        # AllowPrerelease requires modern PowerShellGet
+        if ((Get-Module PowerShellGet).Version -gt "1.6.0") {
+            $ModuleParam.AllowPrerelease = $AllowPrerelease
+        } elseif($AllowPrerelease) {
+            Write-Warning "Installing pre-release modules requires PowerShellGet 1.6.0 or later. Please add that at the top of your RequiredModules!"
         }
         if ($Repository) {
             $ModuleParam["Repository"] = $Repository

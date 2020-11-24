@@ -3,7 +3,7 @@ filter ImportRequiredModulesFile {
         .SYNOPSIS
             Load a file defining one or more RequiredModules
     #>
-    [OutputType([RequiredModule])]
+    [OutputType('RequiredModule')]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]

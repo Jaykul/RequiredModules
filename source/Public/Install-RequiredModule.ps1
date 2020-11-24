@@ -147,8 +147,8 @@ function Install-RequiredModule {
     Write-Verbose "Importing Modules"
 
     if ($Import) {
-        Remove-Module $Modules.Name -Force -ErrorAction Ignore
-        $Modules | GetModuleVersion -OV InstalledModules | Import-Module -Passthru:(!$Quiet) -Verbose:$false
+        Remove-Module $Modules.Name -Force -ErrorAction Ignore -Verbose:$false
+        $Modules | GetModuleVersion -OV InstalledModules | Import-Module -Passthru:(!$Quiet) -Verbose:$false -Scope Global
     } elseif ($InstallErrors) {
         Write-Warning "Module import skipped because of errors. `nSee error details in `$IRM_InstallErrors`nSee required modules in `$IRM_RequiredModules`nSee installed modules in `$IRM_InstalledModules"
         $global:IRM_InstallErrors = $InstallErrors
