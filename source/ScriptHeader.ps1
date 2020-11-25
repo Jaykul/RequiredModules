@@ -78,7 +78,7 @@
     without changing the machine as much (keeping all the files locally)
     and supressing prompts, trusting repositories that are already registerered
 #>
-[CmdletBinding(DefaultParameterSetName="FromHash", ConfirmImpact="High", SupportsShouldProcess)]
+[CmdletBinding(DefaultParameterSetName="FromFile", ConfirmImpact="High", SupportsShouldProcess)]
 param(
     # The path to a metadata file listing required modules. Defaults to "RequiredModules.psd1" (in the current working directory).
     [Parameter(Position=0, ParameterSetName="FromFile")]

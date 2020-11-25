@@ -46,7 +46,7 @@ filter FindModuleVersion {
             Verbose = $false
         }
         # AllowPrerelease requires modern PowerShellGet
-        if ((Get-Module PowerShellGet).Version -gt "1.6.0") {
+        if ((Get-Module PowerShellGet).Version -ge "1.6.0") {
             $ModuleParam.AllowPrerelease = $AllowPrerelease
         } elseif($AllowPrerelease) {
             Write-Warning "Installing pre-release modules requires PowerShellGet 1.6.0 or later. Please add that at the top of your RequiredModules!"

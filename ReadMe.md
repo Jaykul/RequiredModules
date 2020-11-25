@@ -41,6 +41,13 @@ There is a new syntax for the RequiredModules hashtables to support specifying a
 
 Remember, Install-RequiredModule does not explicitly require PowerShellGet. PowerShell 5+ automatically include a version of it, and we assume that you're using it to install this script. If you need a higher version (which you very well may) you should put it in your RequiredModules manifest.
 
+## Missing Functionality
+
+- We need to handle PowerShellGet (and PackageManagement) specially. If they are in the list, install them first AND import them. This would allow clean environments to install pre-release modules.
+- We should read the hashtable in RequiredModules.psd1 in order. The Configuration module can do this, but obviously it would be problematic for Install-RequiredModule to have a module dependency...
+
+
+
 ## Contributing
 
 This project is MIT licensed and I'm happy to accept PRs, feature requests or bug reports.

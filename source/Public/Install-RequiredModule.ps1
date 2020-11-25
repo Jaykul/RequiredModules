@@ -47,7 +47,7 @@ function Install-RequiredModule {
              without changing the machine as much (keeping all the files locally)
              and supressing prompts, trusting repositories that are already registerered
     #>
-    [CmdletBinding(DefaultParameterSetName = "FromHash", SupportsShouldProcess = $true, ConfirmImpact = "High")]
+    [CmdletBinding(DefaultParameterSetName = "FromFile", SupportsShouldProcess = $true, ConfirmImpact = "High")]
     param(
         # The path to a metadata file listing required modules. Defaults to "RequiredModules.psd1" (in the current working directory).
         [Parameter(Position = 0, ParameterSetName = "FromFile")]
@@ -55,7 +55,7 @@ function Install-RequiredModule {
         [Alias("Path")]
         [string]$RequiredModulesFile = "RequiredModules.psd1",
 
-        [Parameter(Position = 0, ParameterSetName = "FromHash", Mandatory)]
+        [Parameter(Position = 0, ParameterSetName = "FromHash")]
         [hashtable]$RequiredModules,
 
         # If set, the local tools Destination path will be cleared and recreated
