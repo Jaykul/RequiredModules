@@ -4,19 +4,19 @@
 
     Set-Content $ScriptPath @(
         "[CmdletBinding()]param()"
-        Compress-ToString $AssemblyPath, $ModulePath
+        Compress-Module $AssemblyPath, $ModulePath
         "Install-RequiredModule 'RequiredModules.psd1'"
     )
 #>
 
-function Compress-ToString {
+function Compress-Module {
     <#
         .SYNOPSIS
             Compresses and encodes a file for embedding into a script
         .DESCRIPTION
             Reads the raw bytes and then compress (gzip) them, before base64 encoding the result
         .EXAMPLE
-            Get-ChildItem *.dll, *.psm1 | CompressToString >> Script.ps1
+            Get-ChildItem *.dll, *.psm1 | Compress-Module >> Script.ps1
         .LINK
             ExpandToMemory
     #>

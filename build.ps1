@@ -1,29 +1,28 @@
 #requires -Module Configuration, ModuleBuilder
 <#
     .Synopsis
-        This is just a bootstrapping build, for when ModuleBuilder can't be used to build ModuleBuilder
+        RequiredModule is special. Besides being a module, it compiles to a script.
 #>
 [CmdletBinding()]
 param(
     # A specific folder to build into
     $OutputDirectory,
 
-    # The version of the output module
+    # The version for the output module
     [Alias("ModuleVersion")]
     [string]$SemVer
 )
 $ErrorActionPreference = "Stop"
 Push-Location $PSScriptRoot -StackName BuildModule
 
-if (-not $Semver -and (Get-Command gitversion -ErrorAction SilentlyContinue)) {
-    if ($semver = gitversion -showvariable SemVer) {
+if (-not $SemVer -and (Get-Command gitversion -ErrorAction SilentlyContinue)) {
+    if ($SemVer = gitversion -showvariable SemVer) {
         $null = $PSBoundParameters.Add("SemVer", $SemVer)
     }
 }
 
-
 try {
-    # Build new output
+    # Build new Module output
     $ParameterString = $PSBoundParameters.GetEnumerator().ForEach{ '-' + $_.Key + " '" + $_.Value + "'" } -join " "
     Write-Verbose "Build-Module Source/build.psd1 $($ParameterString) -Target CleanBuild"
 
@@ -38,7 +37,7 @@ try {
 
     Set-Content $ScriptPath @(
         Get-Content $PSScriptRoot/Source/ScriptHeader.ps1
-        Compress-ToString $AssemblyPath, $ModulePath
+        Compress-Module $AssemblyPath, $ModulePath
         "Install-RequiredModule @PSBoundParameters"
     )
 

@@ -1,5 +1,5 @@
-#requires -Module RequiredModule
-using module RequiredModule
+#requires -Module RequiredModules
+using module RequiredModules
 using namespace NuGet.Versioning
 
 Describe "FindModuleVersion calls Find-Module and filters based on the VersionRange" {
@@ -10,7 +10,7 @@ Describe "FindModuleVersion calls Find-Module and filters based on the VersionRa
         Write-Host "PreRegisteredRepositories:" -Foreground Green
         Get-PSRepository -OutVariable +PreRegisteredRepositories | Out-String -Stream | Write-Host -Foreground Green
 
-        Register-PSRepository -Name FindModuleTestFake -SourceLocation "https://powershell.myget.org/F/powershell-core/api/v2/" -InstallationPolicy Trusted -ErrorAction SilentlyContinue
+        Register-PSRepository -Name FindModuleTestFake -SourceLocation "https://www.myget.org/F/aspnetwebstacknightly/api/v2" -InstallationPolicy Trusted -ErrorAction SilentlyContinue
         Register-PSRepository -Default -InstallationPolicy Trusted -ErrorAction SilentlyContinue
 
         Write-Host "RegisteredRepositoriesIncludingTest:" -Foreground Cyan
@@ -18,15 +18,15 @@ Describe "FindModuleVersion calls Find-Module and filters based on the VersionRa
     }
 
     # This mock dumps a _ton_ of module info looking things for every query ....
-    # Find-MOoule returns results HIGHEST to LOWEST (which is critical for our logic)
-    Mock Find-Module -Module RequiredModule {
+    # Find-Module returns results HIGHEST to LOWEST (which is critical for our logic)
+    Mock Find-Module -Module RequiredModules {
         $Versions = @('3.5.0', '3.4.5', '3.4.4', '3.4.3', '3.4.2', '3.4.1', '3.4.0', '3.3.0', '3.2.0', '3.1.1', '3.1.0', '3.0.2', '3.0.1', '3.0.0', '2.2.4', '2.2.3', '2.2.2', '2.2.1', '2.2.0', '2.1.3', '2.1.2', '2.1.1', '2.1.0', '2.0.1', '2.0.0', '1.2.0', '1.1.5', '1.1.4', '1.1.3', '1.1.2', '1.1.1', '1.1.0', '1.0.4', '1.0.3', '1.0.2', '1.0.1', '1.0.0')
         # Write-Host "Given a big list of module versions for ${Name}: $Versions"
         # Write-Host "Search for $Name in $Repository"
         foreach($Module in $Name) {
             foreach($Repo in @(
                 [PSCustomObject]@{Name = "SomeUntrustedRepo"; SourceLocation = "https://poshcode.org/api/psget2/"}
-                [PSCustomObject]@{Name = "FindModuleTestFake"; SourceLocation = "https://powershell.myget.org/F/powershell-core/api/v2/"}
+                [PSCustomObject]@{Name = "FindModuleTestFake"; SourceLocation = "https://www.myget.org/F/aspnetwebstacknightly/api/v2"}
                 [PSCustomObject]@{Name = "PSGallery"; SourceLocation = "https://www.powershellgallery.com/api/v2"}
                 ).Where{ -not $Repository -or $_.SourceLocation -in $Repository }) {
                 foreach ($Version in $Versions) {
@@ -59,7 +59,7 @@ Describe "FindModuleVersion calls Find-Module and filters based on the VersionRa
             }
         }'
 
-        $Result["Output"] = InModuleScope RequiredModule { ImportRequiredModulesFile TestDrive:\RequiredModules.psd1 | FindModuleVersion -Verbose } -WarningVariable Warnings
+        $Result["Output"] = InModuleScope RequiredModules { ImportRequiredModulesFile TestDrive:\RequiredModules.psd1 | FindModuleVersion -Verbose } -WarningVariable Warnings
         $Result["Warnings"] = $Warnings
         $Result["Output"].Count | Should -Be 4
     }
@@ -95,10 +95,10 @@ Describe "FindModuleVersion calls Find-Module and filters based on the VersionRa
 
     It "Returns the first trusted result if the repository isn't specified" {
         $Required = $Result.Where{ $_.Name -eq "PowerShellGet" }
-        $Required.RepositorySourceLocation | Should -Be "https://powershell.myget.org/F/powershell-core/api/v2/"
+        $Required.RepositorySourceLocation | Should -Be "https://www.myget.org/F/aspnetwebstacknightly/api/v2"
 
         $Required = $Result.Where{ $_.Name -eq "Configuration" }
-        $Required.RepositorySourceLocation | Should -Be "https://powershell.myget.org/F/powershell-core/api/v2/"
+        $Required.RepositorySourceLocation | Should -Be "https://www.myget.org/F/aspnetwebstacknightly/api/v2"
     }
 
     It "Filters the result to a specific location when the repository is specified" {
@@ -115,11 +115,11 @@ Describe "FindModuleVersion calls Find-Module and filters based on the VersionRa
     Describe "When passing credentials" {
 
         It "Should pass through the credential" {
-            $Required = InModuleScope RequiredModule {
+            $Required = InModuleScope RequiredModules {
                 [RequiredModule[]]@((
                     @{ "Configuration" = @{
                         Version = "[1.0.0,2.0)"
-                        Repository = "https://powershell.myget.org/F/powershell-core/api/v2/"
+                        Repository = "https://www.myget.org/F/aspnetwebstacknightly/api/v2"
                         Credential = [PSCredential]::new("UserName", (ConvertTo-SecureString "Password" -AsPlainText -Force))
                     }}
                 ).GetEnumerator()) | FindModuleVersion

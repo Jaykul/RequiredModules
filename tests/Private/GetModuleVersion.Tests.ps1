@@ -1,12 +1,12 @@
-#requires -Module RequiredModule
-using module RequiredModule
+#requires -Module RequiredModules
+using module RequiredModules
 using namespace NuGet.Versioning
 
 Describe "GetModuleVersion calls Get-Module and filters based on the VersionRange" {
 
     # This mock dumps a _ton_ of module info looking things for every query ....
     # Get-Module returns results HIGHEST to LOWEST (but also by folder)
-    Mock Get-Module -Module RequiredModule {
+    Mock Get-Module -Module RequiredModules {
         $Folders = @{
             "C:\Program Files\PowerShell\Modules" = @('3.4.0', '3.0.0', '2.2.4', '1.0.1', '1.0.0')
             "C:\Users\YourName\Documents\PowerShell" = @('3.5.0', '3.4.5', '3.4.1')
@@ -42,7 +42,7 @@ Describe "GetModuleVersion calls Get-Module and filters based on the VersionRang
             }
         }'
 
-        $Result["Output"] = InModuleScope RequiredModule { ImportRequiredModulesFile TestDrive:\RequiredModules.psd1 | GetModuleVersion -Verbose }
+        $Result["Output"] = InModuleScope RequiredModules { ImportRequiredModulesFile TestDrive:\RequiredModules.psd1 | GetModuleVersion -Verbose }
         $Result["Output"].Count | Should -Be 3
     }
 

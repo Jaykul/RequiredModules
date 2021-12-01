@@ -1,22 +1,22 @@
-#requires -Module RequiredModule
-using module RequiredModule
+#requires -Module RequiredModules
+using module RequiredModules
 using namespace NuGet.Versioning
 
 Describe "InstallModuleVersion calls Save or Install-Module with -RequiredVersion" {
 
-    Mock Install-Module -Module RequiredModule { }
-    Mock Save-Module -Module RequiredModule { }
-    Mock GetModuleVersion -Module RequiredModule { $true }
+    Mock Install-Module -Module RequiredModules { }
+    Mock Save-Module -Module RequiredModules { }
+    Mock GetModuleVersion -Module RequiredModules { $true }
 
     Describe "Unrestricted module install" {
         It "InstallModuleVersion accepts module name and version" {
-            InModuleScope RequiredModule {
+            InModuleScope RequiredModules {
                 InstallModuleVersion -Name ModuleBuilder -Version 1.3.0
             }
         }
 
         It "Calls install-Module with the Name and RequiredVersion" {
-            Assert-MockCalled Install-Module -Module RequiredModule -Parameter {
+            Assert-MockCalled Install-Module -Module RequiredModules -Parameter {
                 $Name -eq "ModuleBuilder"
                 $RequiredVersion -eq "1.3.0"
             }
@@ -27,7 +27,7 @@ Describe "InstallModuleVersion calls Save or Install-Module with -RequiredVersio
 
         It "InstallModuleVersion accepts respository as well" {
             # Note we test pipeline binding here with an object shaped like the output of Find-Module:
-            InModuleScope RequiredModule {
+            InModuleScope RequiredModules {
                 @(
                     [PSCustomObject]@{
                         PSTypeName = "PSModuleInfo"
@@ -42,7 +42,7 @@ Describe "InstallModuleVersion calls Save or Install-Module with -RequiredVersio
         }
 
         It "Calls install-Module with the Repository" {
-            Assert-MockCalled Install-Module -Module RequiredModule -Parameter {
+            Assert-MockCalled Install-Module -Module RequiredModules -Parameter {
                 $Name -eq "ModuleBuilder" -and
                 $RequiredVersion -eq "1.3.0" -and
                 $Repository -eq "https://www.powershellgallery.com/api/v2"
@@ -54,7 +54,7 @@ Describe "InstallModuleVersion calls Save or Install-Module with -RequiredVersio
 
         It "InstallModuleVersion accepts repository as well" {
             # Note we test pipeline binding here with an object shaped like the output of Find-Module:
-            InModuleScope RequiredModule {
+            InModuleScope RequiredModules {
                 @(
                     [PSCustomObject]@{
                         PSTypeName = "PSModuleInfo"
@@ -69,7 +69,7 @@ Describe "InstallModuleVersion calls Save or Install-Module with -RequiredVersio
         }
 
         It "Calls install-Module with the Repository and Credential" {
-            Assert-MockCalled Install-Module -Module RequiredModule -Parameter {
+            Assert-MockCalled Install-Module -Module RequiredModules -Parameter {
                 $Name -eq "ModuleBuilder" -and
                 $RequiredVersion -eq "1.3.0" -and
                 $Repository -eq "https://www.powershellgallery.com/api/v2" -and

@@ -44,8 +44,8 @@ function Install-RequiredModule {
             ./RequiredModules/Install-RequiredModule.ps1 -Path ./RequiredModules.psd1 -Confirm:$false -Destination ./RequiredModules -TrustRegisteredRepositories
 
             This shows another way to use required modules in a build script
-             without changing the machine as much (keeping all the files locally)
-             and supressing prompts, trusting repositories that are already registerered
+            without changing the machine as much (keeping all the files locally)
+            and supressing prompts, trusting repositories that are already registerered
     #>
     [CmdletBinding(DefaultParameterSetName = "FromFile", SupportsShouldProcess = $true, ConfirmImpact = "High")]
     param(
