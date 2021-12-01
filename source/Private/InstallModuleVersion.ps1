@@ -40,8 +40,8 @@ filter InstallModuleVersion {
         [Parameter(ValueFromPipelineByPropertyName, ParameterSetName="SpecificRepository")]
         [PSCredential]$Credential
     )
-    Write-Progress "Installing module '$($Name)' with version '$($Version)' from the PSGallery"
-    Write-Verbose "Installing module '$($Name)' with version '$($Version)' from the PSGallery"
+    Write-Progress "Installing module '$($Name)' with version '$($Version)'$(if($Repository){ " from $Repository" })"
+    Write-Verbose "Installing module '$($Name)' with version '$($Version)'$(if($Repository){ " from $Repository" })"
     Write-Verbose "ConfirmPreference: $ConfirmPreference"
     $ModuleOptions = @{
         Name               = $Name
@@ -80,11 +80,11 @@ filter InstallModuleVersion {
     $null = $PSBoundParameters.Remove("Credential")
     $null = $PSBoundParameters.Remove("Scope")
     if (GetModuleVersion @PSBoundParameters -WarningAction SilentlyContinue) {
-        $PSCmdlet.WriteInformation("Installed module '$($Name)' with version '$($Version)' from the PSGallery", $script:InfoTags)
+        $PSCmdlet.WriteInformation("Installed module '$($Name)' with version '$($Version)'$(if($Repository){ " from $Repository" })", $script:InfoTags)
     } else {
         $PSCmdlet.WriteError(
             [System.Management.Automation.ErrorRecord]::new(
-                [Exception]::new("Failed to install module '$($Name)' with version '$($Version)' from the PSGallery"),
+                [Exception]::new("Failed to install module '$($Name)' with version '$($Version)'$(if($Repository){ " from $Repository" })"),
                 "InstallModuleDidnt",
                 "NotInstalled", $module))
     }

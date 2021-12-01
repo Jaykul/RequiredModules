@@ -1,6 +1,6 @@
 # A class for a structured version of a dependency
 # Note that by default, we leave the repository empty
-# - If you set the repository to "PSGallery" we wil _only_ look there
+# - If you set the repository to "PSGallery" we will _only_ look there
 # - If you leave it blank, we'll look in all registered repositories
 class RequiredModule {
     [string]$Name
