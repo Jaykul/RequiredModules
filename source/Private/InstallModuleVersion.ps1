@@ -46,14 +46,19 @@ filter InstallModuleVersion {
     $ModuleOptions = @{
         Name               = $Name
         RequiredVersion    = $Version
-        # Allow pre-release because we're always specifying a REQUIRED version
-        # If the required version is a pre-release, then we want to allow that
-        AllowPrerelease    = $true
         Verbose            = $VerbosePreference -eq "Continue"
         Confirm            = $ConfirmPreference -eq "Low"
         ErrorAction        = "Stop"
         Scope              = $Scope
     }
+
+    # The Save-Module that's preinstalled on Windows doesn't support AllowPrerelease
+    if ((Get-Command Save-Module).Parameters.ContainsKey("AllowPrerelease")) {
+        # Allow pre-release because we're always specifying a REQUIRED version
+        # If the required version is a pre-release, then we want to allow that
+        $ModuleOptions["AllowPrerelease"] = $true
+    }
+
     if ($Repository) {
         $ModuleOptions["Repository"] = $Repository
         if ($Credential) {
