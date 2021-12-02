@@ -1,5 +1,5 @@
-#requires -Module RequiredModule
-using module RequiredModule
+#requires -Module RequiredModules
+using module RequiredModules
 using namespace NuGet.Versioning
 
 Describe "ImportRequiredModulesFile reads metadata files" {
@@ -19,7 +19,7 @@ Describe "ImportRequiredModulesFile reads metadata files" {
             }
         }'
 
-        $Result["Output"] = InModuleScope RequiredModule { ImportRequiredModulesFile TestDrive:\RequiredModules.psd1 }
+        $Result["Output"] = InModuleScope RequiredModules { ImportRequiredModulesFile TestDrive:\RequiredModules.psd1 }
     }
 
     # unstuffing the hack
@@ -56,8 +56,15 @@ Describe "ImportRequiredModulesFile reads metadata files" {
 
     It "Parses a wildcard as unspecified minimum and maximum" {
         $Required = $Result.Where{ $_.Name -eq "Pester" }
-        $Required.Version.MinVersion | Should -BeNullOrEmpty
         $Required.Version.MaxVersion | Should -BeNullOrEmpty
+        # In the latest version:
+        if ($Required.Version.HasLowerBound) {
+            #   on .NET 6, * comes out with MinVersion: 0.0.0
+            $Required.Version.MinVersion | Should -Be "0.0.0"
+        } else {
+            #   on .NET 4, * comes out with MinVersion: null
+            $Required.Version.MinVersion | Should -BeNullOrEmpty
+        }
     }
 
     It "Parses a partial wildcard '1.*' as a min inclusive [1.0,)" {

@@ -40,13 +40,15 @@ filter InstallModuleVersion {
         [Parameter(ValueFromPipelineByPropertyName, ParameterSetName="SpecificRepository")]
         [PSCredential]$Credential
     )
-    Write-Progress "Installing module '$($Name)' with version '$($Version)' from the PSGallery"
-    Write-Verbose "Installing module '$($Name)' with version '$($Version)' from the PSGallery"
+    Write-Progress "Installing module '$($Name)' with version '$($Version)'$(if($Repository){ " from $Repository" })"
+    Write-Verbose "Installing module '$($Name)' with version '$($Version)'$(if($Repository){ " from $Repository" })"
     Write-Verbose "ConfirmPreference: $ConfirmPreference"
     $ModuleOptions = @{
         Name               = $Name
         RequiredVersion    = $Version
-
+        # Allow pre-release because we're always specifying a REQUIRED version
+        # If the required version is a pre-release, then we want to allow that
+        AllowPrerelease    = $true
         Verbose            = $VerbosePreference -eq "Continue"
         Confirm            = $ConfirmPreference -eq "Low"
         ErrorAction        = "Stop"
@@ -78,11 +80,11 @@ filter InstallModuleVersion {
     $null = $PSBoundParameters.Remove("Credential")
     $null = $PSBoundParameters.Remove("Scope")
     if (GetModuleVersion @PSBoundParameters -WarningAction SilentlyContinue) {
-        $PSCmdlet.WriteInformation("Installed module '$($Name)' with version '$($Version)' from the PSGallery", $InfoTags)
+        $PSCmdlet.WriteInformation("Installed module '$($Name)' with version '$($Version)'$(if($Repository){ " from $Repository" })", $script:InfoTags)
     } else {
         $PSCmdlet.WriteError(
             [System.Management.Automation.ErrorRecord]::new(
-                [Exception]::new("Failed to install module '$($Name)' with version '$($Version)' from the PSGallery"),
+                [Exception]::new("Failed to install module '$($Name)' with version '$($Version)'$(if($Repository){ " from $Repository" })"),
                 "InstallModuleDidnt",
                 "NotInstalled", $module))
     }

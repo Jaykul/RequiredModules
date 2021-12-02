@@ -1,5 +1,5 @@
-#requires -Module RequiredModule
-using module RequiredModule
+#requires -Module RequiredModules
+using module RequiredModules
 using namespace NuGet.Versioning
 
 Describe "AddPSModulePath ensures the path is a folder and adds it to the current PSModulePath" {
@@ -14,7 +14,7 @@ Describe "AddPSModulePath ensures the path is a folder and adds it to the curren
         # just to make sure it's not already there
         "TestDrive:\One" | Should -Not -Exist
 
-        InModuleScope RequiredModule {
+        InModuleScope RequiredModules {
             AddPSModulePath TestDrive:\One
         }
 
@@ -25,7 +25,7 @@ Describe "AddPSModulePath ensures the path is a folder and adds it to the curren
         # just to make sure it's not already there
         $Env:PSModulePath.Split([IO.Path]::PathSeparator) -eq (Convert-Path "TestDrive:\One") | Should -BeNullOrEmpty
 
-        InModuleScope RequiredModule {
+        InModuleScope RequiredModules {
             AddPSModulePath TestDrive:\One
         }
 
@@ -37,7 +37,7 @@ Describe "AddPSModulePath ensures the path is a folder and adds it to the curren
 
         "TestDrive:\One" | Should -Exist
 
-        InModuleScope RequiredModule {
+        InModuleScope RequiredModules {
             AddPSModulePath TestDrive:\One
         }
 
@@ -48,7 +48,7 @@ Describe "AddPSModulePath ensures the path is a folder and adds it to the curren
 
         "TestDrive:\One" | Should -Exist
 
-        InModuleScope RequiredModule {
+        InModuleScope RequiredModules {
             AddPSModulePath TestDrive:\One -WarningVariable warned -ErrorVariable failed
             $warned | Should -BeNullOrEmpty
             $failed | Should -BeNullOrEmpty
@@ -61,7 +61,7 @@ Describe "AddPSModulePath ensures the path is a folder and adds it to the curren
 
         New-Item "TestDrive:\One\FileOne" -ItemType File -Value "Hello World"
 
-        InModuleScope RequiredModule {
+        InModuleScope RequiredModules {
             AddPSModulePath TestDrive:\One -WarningVariable warned -WarningAction SilentlyContinue -ErrorVariable failed
             $warned | Should -Match "The folder .* is not empty"
             $warned | Should -Not -Match "removing all content"
@@ -76,7 +76,7 @@ Describe "AddPSModulePath ensures the path is a folder and adds it to the curren
 
         New-Item "TestDrive:\One\FileTwo" -ItemType File -Value "Hello World"
 
-        InModuleScope RequiredModule {
+        InModuleScope RequiredModules {
             AddPSModulePath TestDrive:\One -Clean -WarningVariable warned -WarningAction SilentlyContinue -ErrorVariable failed
             $warned | Should -Match "The folder .* is not empty"
             $warned | Should -Match "removing all content"
@@ -91,7 +91,7 @@ Describe "AddPSModulePath ensures the path is a folder and adds it to the curren
     It "Does not cause problems if you -Clean a non-existent folder" {
 
         "TestDrive:\Two" | Should -Not -Exist
-        InModuleScope RequiredModule {
+        InModuleScope RequiredModules {
             AddPSModulePath TestDrive:\Two -Clean -WarningVariable warned -WarningAction SilentlyContinue -ErrorVariable failed
             $warned | Should -BeNullOrEmpty
             $failed | Should -BeNullOrEmpty

@@ -1,11 +1,11 @@
-#requires -Module RequiredModule, PowerShellGet
-using module RequiredModule
+#requires -Module RequiredModules, PowerShellGet
+using module RequiredModules
 using namespace NuGet.Versioning
 
 Describe "Install-RequiredModule" {
     Push-Location TestDrive:\
 
-    InModuleScope RequiredModule {
+    InModuleScope RequiredModules {
         Mock ConvertToRequiredModule {
             process {
                 $InputObject.GetEnumerator().ForEach([RequiredModule])
@@ -50,7 +50,7 @@ Describe "Install-RequiredModule" {
                 Install-RequiredModule -ErrorAction Stop
             } | Should -Not -Throw
 
-            Assert-MockCalled ConvertToRequiredModule -ModuleName RequiredModule -ParameterFilter {
+            Assert-MockCalled ConvertToRequiredModule -ModuleName RequiredModules -ParameterFilter {
                 $InputObject.Count | Should -Be 1
                 $InputObject["PowerShellGet"] | Should -Be '1.0.0'
                 $true

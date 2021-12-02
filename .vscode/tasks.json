@@ -10,10 +10,9 @@
                 "isDefault": true
             },
             "type": "shell",
-            "command": "${workspaceFolder}/.vscode/tools/Build-Module.ps1",
+            "command": "${workspaceFolder}/build.ps1",
             "args": [
-                "-Source",
-                "${workspaceFolder}/source"
+                "-verbose"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -26,7 +25,10 @@
                 "panel": "shared",
                 "showReuseMessage": true,
                 "clear": false
-            }
+            },
+            "problemMatcher": [
+                "$pester"
+            ]
         },
         {
             "label": "test",
@@ -35,7 +37,8 @@
                 "isDefault": true
             },
             "type": "shell",
-            "command": "${workspaceFolder}/.vscode/tools/Test-Module.ps1",
+            "command": "${workspaceFolder}/test.ps1",
+            "args": [],
             "options": {
                 "cwd": "${workspaceFolder}"
             },

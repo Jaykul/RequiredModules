@@ -1,12 +1,10 @@
-using namespace NuGet.Versioning
-
 # A class for a structured version of a dependency
 # Note that by default, we leave the repository empty
-# - If you set the repository to "PSGallery" we wil _only_ look there
+# - If you set the repository to "PSGallery" we will _only_ look there
 # - If you leave it blank, we'll look in all registered repositories
 class RequiredModule {
     [string]$Name
-    [VersionRange]$Version
+    [NuGet.Versioning.VersionRange]$Version
     [string]$Repository
     [PSCredential]$Credential
 
@@ -18,14 +16,14 @@ class RequiredModule {
     }
 
     # A more complicated dependency includes a specific repository URL
-    RequiredModule([string]$Name, [VersionRange]$Version, [string]$Repository) {
+    RequiredModule([string]$Name, [NuGet.Versioning.VersionRange]$Version, [string]$Repository) {
         $this.Name = $Name
         $this.Version = $Version
         $this.Repository = $Repository
     }
 
     # The most complicated dependency includes credentials for that specific repository
-    RequiredModule([string]$Name, [VersionRange]$Version, [string]$Repository, [PSCredential]$Credential) {
+    RequiredModule([string]$Name, [NuGet.Versioning.VersionRange]$Version, [string]$Repository, [PSCredential]$Credential) {
         $this.Name = $Name
         $this.Version = $Version
         $this.Repository = $Repository
@@ -43,14 +41,14 @@ class RequiredModule {
     hidden [void] Update([System.Collections.DictionaryEntry]$Data) {
         $this.Name = $Data.Key
 
-        if ($Data.Value -as [VersionRange]) {
-            $this.Version = [VersionRange]$Data.Value
-        # This is extra: don't care about version, do care about repo ...
-        } elseif($Data.Value -is [string] -or $Data.Value -is [uri]) {
+        if ($Data.Value -as [NuGet.Versioning.VersionRange]) {
+            $this.Version = [NuGet.Versioning.VersionRange]$Data.Value
+            # This is extra: don't care about version, do care about repo ...
+        } elseif ($Data.Value -is [string] -or $Data.Value -is [uri]) {
             $this.Repository = $Data.Value
 
-        } elseif($Data.Value -is [System.Collections.IDictionary]) {
-                # this allows partial matching like the -Property of Select-Object:
+        } elseif ($Data.Value -is [System.Collections.IDictionary]) {
+            # this allows partial matching like the -Property of Select-Object:
             switch ($Data.Value.GetEnumerator()) {
                 { "Version".StartsWith($_.Key, [StringComparison]::InvariantCultureIgnoreCase) } {
                     $this.Version = $_.Value
