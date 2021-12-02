@@ -111,8 +111,8 @@ function Install-RequiredModule {
 
     if ($TrustRegisteredRepositories) {
         # Force Policy to Trusted so we can install without prompts and without -Force which is bad
-        $OriginalRepositories = Get-PSRepository
-        foreach ($repo in $OriginalRepositories.Where{ $_.InstallationPolicy -ne "Trusted" }) {
+        $OriginalRepositories = @(Get-PSRepository)
+        foreach ($repo in $OriginalRepositories.Where({ $_.InstallationPolicy -ne "Trusted" })) {
             Write-Verbose "Setting $($repo.Name) Trusted"
             Set-PSRepository $repo.Name -InstallationPolicy Trusted
         }
@@ -137,7 +137,7 @@ function Install-RequiredModule {
     } finally {
         if ($TrustRegisteredRepositories) {
             # Put Policy back so we don't needlessly change environments permanently
-            foreach ($repo in $OriginalRepositories.Where{ $_.InstallationPolicy -ne "Trusted" }) {
+            foreach ($repo in $OriginalRepositories.Where({ $_.InstallationPolicy -ne "Trusted" })) {
                 Write-Verbose "Setting $($repo.Name) back to $($repo.InstallationPolicy)"
                 Set-PSRepository $repo.Name -InstallationPolicy $repo.InstallationPolicy
             }

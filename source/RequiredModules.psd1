@@ -11,6 +11,7 @@
 
             # Release Notes have to be here, so we can update them
             ReleaseNotes   = '
+            5.0.1 Fix PowerShell 5 .Where bug again (sorry)
             5.0.0 Available as a module, with multiple repository support
                 BREAKING CHANGES:
                 - No longer automatically trusts PSGallery. You must ensure that there is at least one repository registered and trusted, or use the `-TrustRegisteredRepositories` to trust all repositories.
