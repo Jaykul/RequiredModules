@@ -1,14 +1,14 @@
-mode: Mainline
 commit-message-incrementing: MergeMessageOnly
-assembly-versioning-format: '{Major}.{Minor}.{Patch}.{env:BUILDCOUNT ?? 0}'
-assembly-informational-format: '{NuGetVersionV2}+Build.{env:BUILDCOUNT ?? 0}.Date.{CommitDate}.Branch.{env:SAFEBRANCHNAME ?? unknown}.Sha.{Sha}'
-next-version: 0.1.0
+assembly-versioning-format: '{Major}.{Minor}.{Patch}'
+assembly-informational-format: '{Major}.{Minor}.{Patch}{PreReleaseLabelWithDash}+Build.{CommitsSinceVersionSource}.Branch.{EscapedBranchName}.Sha.{Sha}.Date.{CommitDate}'
+commit-date-format: yyyyMMddTHHmmssZ
+next-version: 5.0
 branches:
-  master:
+  main:
     increment: Patch
-  features:
+  feature:
     increment: Patch
     regex: .*?/
     source-branches:
-    - master
-    - features
+    - main
+    - feature
