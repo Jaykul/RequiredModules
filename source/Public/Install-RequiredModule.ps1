@@ -129,11 +129,11 @@ function Install-RequiredModule {
             }
         ) |
             # Which do not already have a valid version installed
-            Where-Object { -not ($_ | GetModuleVersion -Destination:$RealDestination -WarningAction SilentlyContinue) } |
+            Where-Object { -not ($_ | GetModuleVersion -Destination:$Destination -WarningAction SilentlyContinue) } |
             # Find a version on the gallery
             FindModuleVersion |
             # And install it
-            InstallModuleVersion -Destination:$RealDestination -Scope:$Scope -ErrorVariable InstallErrors
+            InstallModuleVersion -Destination:$Destination -Scope:$Scope -ErrorVariable InstallErrors
     } finally {
         if ($TrustRegisteredRepositories) {
             # Put Policy back so we don't needlessly change environments permanently

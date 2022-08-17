@@ -52,7 +52,6 @@ filter InstallModuleVersion {
         Verbose            = $VerbosePreference -eq "Continue"
         Confirm            = $ConfirmPreference -eq "Low"
         ErrorAction        = "Stop"
-        Scope              = $Scope
     }
     if ($Repository) {
         $ModuleOptions["Repository"] = $Repository
@@ -71,6 +70,7 @@ filter InstallModuleVersion {
             # PowerShellGet requires both -AllowClobber and -SkipPublisherCheck for example
             SkipPublisherCheck = $true
             AllowClobber       = $true
+            Scope              = $Scope
         }
         Install-Module @ModuleOptions
     }
