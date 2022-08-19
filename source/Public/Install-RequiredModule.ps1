@@ -22,11 +22,8 @@ function Install-RequiredModule {
         .EXAMPLE
             Install-RequiredModule
 
-            Runs the install interactively:
-            - reads the default 'RequiredModules.psd1' from the current folder
-            - prompts for each module that needs to be installed
+            The default parameter-less usage reads the default 'RequiredModules.psd1' from the current folder and installs everything to your user scope PSModulePath
         .EXAMPLE
-            Install-Script Install-RequiredModule
             Install-RequiredModule @{
                 "Configuration" = @{
                     Version = "[1.3.1,2.0)"
@@ -38,14 +35,18 @@ function Install-RequiredModule {
                 }
             }
 
-            This is one way you can use Install-Required module in a build script to ensure the required module are available.
+            Uses Install-RequiredModule to ensure Configuration and ModuleBuilder modules are available, without using a RequiredModules metadata file.
         .EXAMPLE
             Save-Script Install-RequiredModule -Path ./RequiredModules
             ./RequiredModules/Install-RequiredModule.ps1 -Path ./RequiredModules.psd1 -Confirm:$false -Destination ./RequiredModules -TrustRegisteredRepositories
 
             This shows another way to use required modules in a build script
-            without changing the machine as much (keeping all the files locally)
+            without changing the machine as much (keeping all the files local to the build script)
             and supressing prompts, trusting repositories that are already registerered
+        .EXAMPLE
+            Install-RequiredModule @{ Configuration = "*" } -Destination ~/.powershell/modules
+
+            Uses Install-RequiredModules to avoid putting modules in your Documents folder...
     #>
     [CmdletBinding(DefaultParameterSetName = "FromFile", SupportsShouldProcess = $true, ConfirmImpact = "High")]
     param(
