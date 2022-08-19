@@ -49,7 +49,6 @@ filter InstallModuleVersion {
         Verbose            = $VerbosePreference -eq "Continue"
         Confirm            = $ConfirmPreference -eq "Low"
         ErrorAction        = "Stop"
-        Scope              = $Scope
     }
 
     # The Save-Module that's preinstalled on Windows doesn't support AllowPrerelease
@@ -76,6 +75,7 @@ filter InstallModuleVersion {
             # PowerShellGet requires both -AllowClobber and -SkipPublisherCheck for example
             SkipPublisherCheck = $true
             AllowClobber       = $true
+            Scope              = $Scope
         }
         Install-Module @ModuleOptions
     }
