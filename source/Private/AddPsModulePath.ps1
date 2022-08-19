@@ -39,8 +39,8 @@ filter AddPSModulePath {
     # Make sure it's on the PSModulePath
     $RealPath = Convert-Path $Path
     if (-not (@($Env:PSModulePath.Split([IO.Path]::PathSeparator)) -contains $RealPath)) {
-        Write-Verbose "Adding $($RealPath) to PSModulePath"
         $Env:PSModulePath = $RealPath + [IO.Path]::PathSeparator + $Env:PSModulePath
+        Write-Verbose "Addded $($RealPath) to the PSModulePath"
     }
     $RealPath
 }

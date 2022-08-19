@@ -56,17 +56,22 @@ function Install-RequiredModule {
         [string]$RequiredModulesFile = "RequiredModules.psd1",
 
         [Parameter(Position = 0, ParameterSetName = "FromHash")]
+        [Parameter(Position = 0, ParameterSetName = "LocalToolsFromHash")]
         [hashtable]$RequiredModules,
 
         # If set, the local tools Destination path will be cleared and recreated
         [Parameter(ParameterSetName = "LocalToolsFromFile")]
+        [Parameter(ParameterSetName = "LocalToolsFromHash")]
         [Switch]$CleanDestination,
 
         # If set, saves the modules to a local path rather than installing them to the scope
         [Parameter(ParameterSetName = "LocalToolsFromFile", Position = 1, Mandatory)]
+        [Parameter(ParameterSetName = "LocalToolsFromHash", Position = 1, Mandatory)]
         [string]$Destination,
 
         # The scope in which to install the modules (defaults to "CurrentUser")
+        [Parameter(ParameterSetName = "FromHash")]
+        [Parameter(ParameterSetName = "FromFile")]
         [ValidateSet("CurrentUser", "AllUsers")]
         $Scope = "CurrentUser",
 
@@ -121,9 +126,11 @@ function Install-RequiredModule {
         $(  # For all the modules they want to install
             switch -Wildcard ($PSCmdlet.ParameterSetName) {
                 "*FromFile" {
+                    Write-Debug "Installing from RequiredModulesFile $RequiredModulesFile"
                     ImportRequiredModulesFile $RequiredModulesFile -OV Modules
                 }
-                "FromHash"  {
+                "*FromHash"  {
+                    Write-Debug "Installing from in-line hashtable $($RequiredModules | Out-String)"
                     ConvertToRequiredModule $RequiredModules -OV Modules
                 }
             }

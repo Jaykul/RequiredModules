@@ -64,7 +64,9 @@
     RootModule             = 'RequiredModules.psm1'
 
     # Modules that must be imported into the global environment prior to importing this module
-    RequiredModules        = @("PowerShellGet") # 'Configuration'
+    RequiredModules      = @(
+        @{ModuleName = "PowerShellGet"; MaximumVersion = "2.99.99" }
+    )
 
     RequiredAssemblies     = @("lib\NuGet.Versioning.dll")
 
