@@ -3,14 +3,14 @@ using module RequiredModules
 using namespace NuGet.Versioning
 
 Describe "Install-RequiredModule" {
-    Push-Location TestDrive:\
+    BeforeAll {
+        Push-Location TestDrive:\
 
-    InModuleScope RequiredModules {
         Mock ConvertToRequiredModule {
             process {
                 $InputObject.GetEnumerator().ForEach([RequiredModule])
             }
-        }
+        } -ModuleName RequiredModules
 
         # We'll test FindModuleVersion's logic
         Mock Find-Module {
@@ -28,11 +28,11 @@ Describe "Install-RequiredModule" {
                     }
                 }
             }
-        }
+        } -ModuleName RequiredModules
 
-        Mock Install-Module { }
-        Mock Save-Module { }
-        Mock GetModuleVersion { (Get-PSCallStack) -match "InstallModuleVersion" }
+        Mock Install-Module { } -ModuleName RequiredModules
+        Mock Save-Module { } -ModuleName RequiredModules
+        Mock GetModuleVersion { (Get-PSCallStack) -match "InstallModuleVersion" } -ModuleName RequiredModules
 
     }
 
@@ -43,9 +43,10 @@ Describe "Install-RequiredModule" {
             } | Should -Throw "RequiredModules file 'RequiredModules.psd1' not found."
         }
 
-        Set-Content TestDrive:\RequiredModules.psd1 "@{ PowerShellGet = '1.0.0' }"
-
         It "Reads RequiredModules.psd1 if it does exist" {
+
+            Set-Content TestDrive:\RequiredModules.psd1 "@{ PowerShellGet = '1.0.0' }"
+
             {
                 Install-RequiredModule -ErrorAction Stop
             } | Should -Not -Throw
@@ -65,13 +66,15 @@ Describe "Install-RequiredModule" {
             "Configuration"    = "[1.2.1,2.0)"
             "Pester"           = "*"
             "PSScriptAnalyzer" = "1.*"
-            "Questionmark.Naming"    = @{
-                Version = "1.*"
-                Repository = "https://pkgs.dev.azure.com/poshcode/_packaging/PowerShell/nuget/v2"
-                Credential = [PSCredential]::new("Automation", (ConvertTo-SecureString -Force -AsPlainText "FakeToken"))
+            "SitecoreDockerTools"    = @{
+                Version = "10.*"
+                Repository = "https://sitecore.myget.org/F/sc-powershell/api/v2"
+                Credential = [PSCredential]::Empty
             }
         }
     }
 
-    Pop-Location
+    AfterAll {
+        Pop-Location
+    }
 }

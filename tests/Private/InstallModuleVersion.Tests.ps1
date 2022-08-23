@@ -3,10 +3,11 @@ using module RequiredModules
 using namespace NuGet.Versioning
 
 Describe "InstallModuleVersion calls Save or Install-Module with -RequiredVersion" {
-
-    Mock Install-Module -Module RequiredModules { }
-    Mock Save-Module -Module RequiredModules { }
-    Mock GetModuleVersion -Module RequiredModules { $true }
+    BeforeAll {
+        Mock Install-Module -Module RequiredModules { }
+        Mock Save-Module -Module RequiredModules { }
+        Mock GetModuleVersion -Module RequiredModules { $true }
+    }
 
     Describe "Unrestricted module install" {
         It "InstallModuleVersion accepts module name and version" {
@@ -19,7 +20,7 @@ Describe "InstallModuleVersion calls Save or Install-Module with -RequiredVersio
             Assert-MockCalled Install-Module -Module RequiredModules -Parameter {
                 $Name -eq "ModuleBuilder"
                 $RequiredVersion -eq "1.3.0"
-            }
+            } -Scope Describe
         }
     }
 
@@ -46,7 +47,7 @@ Describe "InstallModuleVersion calls Save or Install-Module with -RequiredVersio
                 $Name -eq "ModuleBuilder" -and
                 $RequiredVersion -eq "1.3.0" -and
                 $Repository -eq "https://www.powershellgallery.com/api/v2"
-            }
+            } -Scope Describe
         }
     }
 
@@ -75,7 +76,7 @@ Describe "InstallModuleVersion calls Save or Install-Module with -RequiredVersio
                 $Repository -eq "https://www.powershellgallery.com/api/v2" -and
                 $Credential.UserName -eq "UserName" -and
                 $Credential.GetNetworkCredential().Password -eq "Password"
-            }
+            } -Scope Describe
         }
     }
 }

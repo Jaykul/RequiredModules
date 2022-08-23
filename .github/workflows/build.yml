@@ -62,7 +62,6 @@ jobs:
           codeCoveragePath: Modules/RequiredModules
           moduleUnderTest: RequiredModules
           additionalModulePaths: ${{github.workspace}}/Modules
-          pesterVersion: 4.10.1
 
       - name: Upload Results
         uses: actions/upload-artifact@v2

@@ -1,4 +1,4 @@
-#requires -Module @{ ModuleName = 'Pester'; ModuleVersion = '4.10.1'; MaximumVersion = '4.9999' }, @{ ModuleName = 'PowerShellGet'; ModuleVersion = '2.1.0'; MaximumVersion = '2.9999' }
+#requires -Module @{ ModuleName = 'Pester'; ModuleVersion = '5.3.0' }, @{ ModuleName = 'PowerShellGet'; ModuleVersion = '2.1.0'; MaximumVersion = '2.9999' }
 using namespace Microsoft.PackageManagement.Provider.Utility
 # using namespace System.Management.Automation
 param(
@@ -41,10 +41,21 @@ if (-not ($Env:PSModulePath -split ';' -eq $ModulePath)) {
     $Env:PSModulePath = $ModulePath + ';' + $Env:PSModulePath
 }
 
-if (-not $SkipCodeCoverage) {
-    Invoke-Pester .\Tests -Show $Show -CodeCoverage $ModuleUnderTest.Path -CodeCoverageOutputFile .\coverage.xml
-} else {
-    Invoke-Pester .\Tests -Show $Show
+Invoke-Pester -Configuration @{
+    Run          = @{
+        Path = "./tests"
+    }
+    CodeCoverage = @{
+        Enabled    = !$SkipCodeCoverage
+        Path       = $ModuleUnderTest.Path
+        OutputPath = "./coverage.xml"
+    }
+    TestResult   = @{
+        Enabled = $true
+    }
+    Debug        = @{
+        ShowNavigationMarkers = $true
+    }
 }
 
 # Write-Host
