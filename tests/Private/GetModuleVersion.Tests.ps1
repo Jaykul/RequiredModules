@@ -9,8 +9,8 @@ Describe "GetModuleVersion calls Get-Module and filters based on the VersionRang
         # Get-Module returns results HIGHEST to LOWEST (but also by folder)
         Mock Get-Module -Module RequiredModules {
             $Folders = @{
-                "C:\Program Files\PowerShell\Modules" = @('3.4.0', '3.0.0', '2.2.4', '1.0.1', '1.0.0')
-                "C:\Users\YourName\Documents\PowerShell" = @('3.5.0', '3.4.5', '3.4.1')
+                (Join-Path $PSHome "Modules") = @('3.4.0', '3.0.0', '2.2.4', '1.0.1', '1.0.0')
+                (Join-Path (Join-Path $Home Documents) PowerShell) = @('3.5.0', '3.4.5', '3.4.1')
             }
 
             $(
