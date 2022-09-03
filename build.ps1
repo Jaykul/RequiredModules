@@ -16,7 +16,7 @@ $ErrorActionPreference = "Stop"
 Push-Location $PSScriptRoot -StackName BuildModule
 
 if (-not $SemVer -and (Get-Command gitversion -ErrorAction SilentlyContinue)) {
-    if ($SemVer = gitversion -showvariable InformationalVersion) {
+    if ($SemVer = gitversion -showvariable NuGetVersion) {
         $null = $PSBoundParameters.Add("SemVer", $SemVer)
     }
 }

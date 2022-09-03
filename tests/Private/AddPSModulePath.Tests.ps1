@@ -3,9 +3,10 @@ using module RequiredModules
 using namespace NuGet.Versioning
 
 Describe "AddPSModulePath ensures the path is a folder and adds it to the current PSModulePath" {
-
-    Push-Location TestDrive:\
-    $BeforePSModulePath = $Env:PSModulePath
+    BeforeAll {
+        Push-Location TestDrive:\
+        $BeforePSModulePath = $Env:PSModulePath
+    }
     BeforeEach {
         $Env:PSModulePath = $BeforePSModulePath
     }
@@ -101,6 +102,7 @@ Describe "AddPSModulePath ensures the path is a folder and adds it to the curren
         $Env:PSModulePath.Split([IO.Path]::PathSeparator)[0] | Should -Be (Convert-Path "TestDrive:\Two")
     }
 
-
-    Pop-Location
+    AfterAll {
+        Pop-Location
+    }
 }
