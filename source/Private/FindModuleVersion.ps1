@@ -5,7 +5,8 @@ filter FindModuleVersion {
         .DESCRIPTION
             This function wraps Find-Module -AllVersions to filter according to the specified VersionRange
 
-            Install-RequiredModule supports Nuget style VersionRange, where both minimum and maximum versions can be either inclusive or exclusive. Since Find-Module only supports Inclusive, we can't just use that.
+            RequiredModules supports Nuget style VersionRange, where both minimum and maximum versions can be _either_ inclusive or exclusive
+            Since Find-Module only supports Inclusive, and only returns a single version if we use the Min/Max parameters, we have to use -AllVersions
         .EXAMPLE
             FindModuleVersion PowerShellGet "[2.0,5.0)"
 
@@ -32,10 +33,13 @@ filter FindModuleVersion {
         # Optionally, credentials for the specified repository
         [AllowNull()]
         [Parameter(ValueFromPipelineByPropertyName, ParameterSetName="SpecificRepository")]
-        [PSCredential]$Credential
+        [PSCredential]$Credential,
+
+        # Optionally, find dependencies (causes this to return more than one result)
+        [switch]$Recurse
     )
     begin {
-        $Trusted = Get-PSRepository | Where-Object { $_.InstallationPolicy -eq "Trusted" }
+        $Trusted = Get-PSRepository -OutVariable Repositories | Where-Object { $_.InstallationPolicy -eq "Trusted" }
     }
     process {
         Write-Progress "Searching PSRepository for '$Name' module with version '$Version'" -Id 1 -ParentId 0
@@ -44,6 +48,7 @@ filter FindModuleVersion {
         $ModuleParam = @{
             Name = $Name
             Verbose = $false
+            IncludeDependencies = [bool]$Recurse
         }
         # AllowPrerelease requires modern PowerShellGet
         if ((Get-Module PowerShellGet).Version -ge "1.6.0") {
@@ -52,6 +57,7 @@ filter FindModuleVersion {
             Write-Warning "Installing pre-release modules requires PowerShellGet 1.6.0 or later. Please add that at the top of your RequiredModules!"
         }
         if ($Repository) {
+            $Repository = $Repositories.Where{ $_.Name -in $Repository -or $_.SourceLocation -in $Repository }.Name
             $ModuleParam["Repository"] = $Repository
             if ($Credential) {
                 $ModuleParam["Credential"] = $Credential
@@ -60,7 +66,8 @@ filter FindModuleVersion {
 
         # Find returns modules in Feed and then Version order
         # Before PowerShell 6, sorting didn't preserve order, so we avoid it
-        $Found = Find-Module @ModuleParam -AllVersions | Where-Object {
+        $Found = Find-Module @ModuleParam -AllVersions -OutVariable All | Where-Object {
+                $_.Name -eq $Name -and
                 ($Version.Float -and $Version.Float.Satisfies($_.Version.ToString())) -or
                 (!$Version.Float -and $Version.Satisfies($_.Version.ToString()))
             }
@@ -78,10 +85,18 @@ filter FindModuleVersion {
                 Write-Verbose "Found '$Name' available with version '$($Single.Version)' in trusted repository $($Single.Repository) ($($Single.RepositorySourceLocation))"
             }
 
-            if($Credential) { # if we have credentials, we're going to need to pass them through ...
-                $Single | Add-Member -NotePropertyName Credential -NotePropertyValue $Credential
+            if ($Recurse) {
+                $Count = [Array]::IndexOf($All, $Single) + 1
+                if ($All.Count -gt $Count) {
+                    $Remaining = @($All | Select-Object -Skip $Count).Where({ $_.Name -eq $Name }, "Until")
+                    [Array]::Reverse($Remaining)
+                }
             }
-            $Single
+
+            if ($Credential) { # if we have credentials, we're going to need to pass them through ...
+                @($Remaining) + @($Single) | Add-Member -NotePropertyName Credential -NotePropertyValue $Credential
+            }
+            @($Remaining) + @($Single)
         }
     }
 }
