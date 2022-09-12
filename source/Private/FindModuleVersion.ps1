@@ -27,12 +27,13 @@ filter FindModuleVersion {
 
         # A specific repository to fetch this particular module from
         [AllowNull()]
-        [Parameter(ValueFromPipelineByPropertyName, Mandatory, ParameterSetName="SpecificRepository")]
+        [Parameter(ValueFromPipelineByPropertyName)]
         [string[]]$Repository,
 
         # Optionally, credentials for the specified repository
+        # These are ignored unless the Repository is also specified
         [AllowNull()]
-        [Parameter(ValueFromPipelineByPropertyName, ParameterSetName="SpecificRepository")]
+        [Parameter(ValueFromPipelineByPropertyName)]
         [PSCredential]$Credential,
 
         # Optionally, find dependencies (causes this to return more than one result)
@@ -43,8 +44,7 @@ filter FindModuleVersion {
     }
     process {
         Write-Progress "Searching PSRepository for '$Name' module with version '$Version'" -Id 1 -ParentId 0
-        Write-Verbose  "Searching PSRepository for '$Name' module with version '$Version'"
-
+        Write-Verbose  "Searching PSRepository for '$Name' module with version '$Version'$(if($Repository) { " in $Repository" })$(if($Credential) { " with credentials for " + $Credential.UserName })"
         $ModuleParam = @{
             Name = $Name
             Verbose = $false
@@ -56,9 +56,15 @@ filter FindModuleVersion {
         } elseif($AllowPrerelease) {
             Write-Warning "Installing pre-release modules requires PowerShellGet 1.6.0 or later. Please add that at the top of your RequiredModules!"
         }
+
         if ($Repository) {
-            $Repository = $Repositories.Where{ $_.Name -in $Repository -or $_.SourceLocation -in $Repository }.Name
-            $ModuleParam["Repository"] = $Repository
+            if (($MatchedRepository = $Repositories.Where{ $_.Name -in $Repository -or $_.SourceLocation -in $Repository }.Name)) {
+                $ModuleParam["Repository"] = $MatchedRepository
+            } else {
+                # This would have to be a URL (or the path to a fileshare?)
+                Write-Warning "Searching for '$Name' in unknown repository '$Repository'"
+                $ModuleParam["Repository"] = $Repository
+            }
             if ($Credential) {
                 $ModuleParam["Credential"] = $Credential
             }
@@ -71,32 +77,37 @@ filter FindModuleVersion {
                 ($Version.Float -and $Version.Float.Satisfies($_.Version.ToString())) -or
                 (!$Version.Float -and $Version.Satisfies($_.Version.ToString()))
             }
-
         # $Found | Format-Table Name, Version, Repository, RepositorySourceLocation | Out-String -Stream | Write-Debug
 
-        if (-not $Found) {
+        if (-not @($Found).Count) {
             Write-Warning "Unable to resolve dependency '$Name' with version '$Version'"
         } else {
             # Because we can't trust sorting in PS 5, we need to try checking for
             if (!($Single = @($Found).Where({ $_.RepositorySourceLocation -in $Trusted.SourceLocation }, "First", 1))) {
                 $Single = $Found[0]
-                Write-Warning "Dependency '$Name' with version '$($Single.Version)' found in untrusted repository $($Single.Repository) ($($Single.RepositorySourceLocation))"
+                Write-Warning "Dependency '$Name' with version '$($Single.Version)' found in untrusted repository '$($Single.Repository)' ($($Single.RepositorySourceLocation))"
             } else {
-                Write-Verbose "Found '$Name' available with version '$($Single.Version)' in trusted repository $($Single.Repository) ($($Single.RepositorySourceLocation))"
+                Write-Verbose "Found '$Name' available with version '$($Single.Version)' in trusted repository '$($Single.Repository)' ($($Single.RepositorySourceLocation))"
             }
 
             if ($Recurse) {
                 $Count = [Array]::IndexOf($All, $Single) + 1
                 if ($All.Count -gt $Count) {
-                    $Remaining = @($All | Select-Object -Skip $Count).Where({ $_.Name -eq $Name }, "Until")
-                    [Array]::Reverse($Remaining)
+                    if (($Remaining = @($All | Select-Object -Skip $Count).Where({ $_.Name -eq $Name }, "Until"))) {
+                        [Array]::Reverse($Remaining)
+                        if ($Credential) {
+                            $Remaining | Add-Member -NotePropertyName Credential -NotePropertyValue $Credential
+                        }
+                        $Remaining
+                    }
                 }
             }
 
-            if ($Credential) { # if we have credentials, we're going to need to pass them through ...
-                @($Remaining) + @($Single) | Add-Member -NotePropertyName Credential -NotePropertyValue $Credential
+            if ($Credential) {
+                # if we have credentials, we're going to need to pass them through ...
+                $Single | Add-Member -NotePropertyName Credential -NotePropertyValue $Credential
             }
-            @($Remaining) + @($Single)
+            $Single
         }
     }
 }
