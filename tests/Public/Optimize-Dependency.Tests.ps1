@@ -55,4 +55,73 @@ Describe "Optimize-Dependency" {
 
         Assert-MockCalled Write-Warning -ModuleName RequiredModules
     }
+
+    Context "Using RequiredModules Files" {
+        BeforeAll {
+            $PreRegisteredRepositories = Get-PSRepository
+
+            Register-PSRepository -Name "Trusted Fake Repo" -SourceLocation "https://www.myget.org/F/aspnetwebstacknightly/api/v2" -InstallationPolicy Trusted
+            Register-PSRepository -Default -InstallationPolicy Trusted 2>$null
+
+            # This mock dumps a _ton_ of module info looking things for every query ....
+            # Find-Module returns results HIGHEST to LOWEST (which is critical for our logic)
+            Mock Find-Module -Module RequiredModules {
+                $Versions = @('3.5.0', '3.4.5', '3.4.4', '3.4.3', '3.4.2', '3.4.1', '3.4.0', '3.3.0', '3.2.0', '3.1.1', '3.1.0', '3.0.2', '3.0.1', '3.0.0', '2.2.4', '2.2.3', '2.2.2', '2.2.1', '2.2.0', '2.1.3', '2.1.2', '2.1.1', '2.1.0', '2.0.1', '2.0.0', '1.2.0', '1.1.5', '1.1.4', '1.1.3', '1.1.2', '1.1.1', '1.1.0', '1.0.4', '1.0.3', '1.0.2', '1.0.1', '1.0.0')
+                # Write-Host "Given a big list of module versions for ${Name}: $Versions"
+                foreach ($Module in $Name) {
+                    foreach ($Repo in @(
+                            [PSCustomObject]@{Name = "Trusted Fake Repo"; SourceLocation = "https://www.myget.org/F/aspnetwebstacknightly/api/v2" }
+                            [PSCustomObject]@{Name = "PSGallery"; SourceLocation = "https://www.powershellgallery.com/api/v2" }
+                        ).Where{ -not $Repository -or $_.SourceLocation -in $Repository -or $_.Name -in $Repository } | Get-Random) {
+                        foreach ($Version in $Versions[$(if($AllVersions){ 0..$($Versions.Count) } else { 0 })]) {
+                            [PSCustomObject]@{
+                                PSTypeName               = "Microsoft.PowerShell.Commands.PSRepositoryItemInfo"
+                                Name                     = $Module
+                                Version                  = $Version
+                                Repository               = $Repo.Name
+                                RepositorySourceLocation = $Repo.SourceLocation
+                                Dependencies             = @(
+                                    switch ($Name) {
+                                        "Configuration" {
+                                            @{ Name = "Metadata" }
+                                        }
+                                        "ModuleBuilder" {
+                                            @{ Name = "Configuration" }
+                                            @{ Name = "Metadata" }
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Set-Content TestDrive:\RequiredModules.psd1 '@{
+                "ModuleBuilder"    = @{
+                    Version    = "1.*"
+                    Repository = "https://www.powershellgallery.com/api/v2"
+                }
+                "PowerShellGet"    = "2.0.4"
+                "Configuration"    = "[3.0,4.0)"
+                "Pester"           = "*"
+                "PSScriptAnalyzer" = "1.*"
+            }'
+        }
+
+        It "Works from metadata files" {
+            $Results = Optimize-Dependency -Path TestDrive:\RequiredModules.psd1
+            $Results.Name | Should -Be "Metadata", "Configuration", "ModuleBuilder", "PowerShellGet", "Pester", "PSScriptAnalyzer"
+        }
+
+        AfterAll {
+            foreach ($r in Get-PSRepository) {
+                if ($r.Name -notin @($PreRegisteredRepositories.Name)) {
+                    Unregister-PSRepository -Name $r.Name
+                } else {
+                    Set-PSRepository -Name $r.Name -InstallationPolicy $r.InstallationPolicy
+                }
+            }
+        }
+    }
 }

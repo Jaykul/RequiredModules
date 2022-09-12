@@ -44,7 +44,7 @@ Describe "GetModuleVersion calls Get-Module and filters based on the VersionRang
             }
         }'
 
-        $Result["Output"] = InModuleScope RequiredModules { ImportRequiredModulesFile TestDrive:\RequiredModules.psd1 | GetModuleVersion -Verbose }
+        $Result["Output"] = InModuleScope RequiredModules { ImportRequiredModulesFile TestDrive:\RequiredModules.psd1 | GetModuleVersion }
         $Result["Output"].Count | Should -Be 3
     }
 
