@@ -139,7 +139,7 @@ function Install-RequiredModule {
             # Which do not already have a valid version installed
             Where-Object { -not ($_ | GetModuleVersion -Destination:$Destination -WarningAction SilentlyContinue) } |
             # Find a version on the gallery
-            FindModuleVersion |
+            FindModuleVersion -Recurse | Optimize-Dependency |
             # And install it
             InstallModuleVersion -Destination:$Destination -Scope:$Scope -ErrorVariable InstallErrors
     } finally {
