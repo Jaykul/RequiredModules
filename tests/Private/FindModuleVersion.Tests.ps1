@@ -133,6 +133,33 @@ Describe "FindModuleVersion calls Find-Module and filters based on the VersionRa
         }
     }
 
+    Describe "Upgrade support" {
+        It "Warns when there is a newer version when -WarnIfNewer is set" {
+            [RequiredModule[]]@((
+                        @{
+                            "PhauxModule" = @{
+                                Version    = "[1.0.0,2.0)"
+                            }
+                            "Unrestricted" = @{
+                                Version    = "3.0.0"
+                            }
+                        }
+                    ).GetEnumerator())
+            $Required = InModuleScope RequiredModules {
+                [RequiredModule]::new("PhauxModule", "[1.0.0,2.0)") | FindModuleVersion -WarnIfNewer
+            }
+
+            $Required.Name | Should -Be "PhauxModule"
+            $Required.Version | Should -Be "1.2.0"
+
+            # Write-Warning is only called this one time
+            Assert-MockCalled Write-Warning -ModuleName RequiredModules -Scope Describe -Times 1 -Exactly
+            Assert-MockCalled Write-Warning -ModuleName RequiredModules -Scope Describe -ParameterFilter {
+                $Message -eq "Newer version of 'PhauxModule' available: 3.5.0 -- Selected 1.2.0 per constraint '[1.0.0, 2.0.0)'"
+            }
+        }
+    }
+
     AfterAll {
         foreach ($r in Get-PSRepository) {
             if ($r.Name -notin @($PreRegisteredRepositories.Name)) {

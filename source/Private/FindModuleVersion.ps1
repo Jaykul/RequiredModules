@@ -37,7 +37,10 @@ filter FindModuleVersion {
         [PSCredential]$Credential,
 
         # Optionally, find dependencies (causes this to return more than one result)
-        [switch]$Recurse
+        [switch]$Recurse,
+
+        # Optionally, write a warning if there's a newer version available
+        [switch]$WarnIfNewer
     )
     begin {
         $Trusted = Get-PSRepository -OutVariable Repositories | Where-Object { $_.InstallationPolicy -eq "Trusted" }
@@ -108,6 +111,13 @@ filter FindModuleVersion {
                 $Single | Add-Member -NotePropertyName Credential -NotePropertyValue $Credential
             }
             $Single
+        }
+
+        if ($WarnIfNewer) {
+            # If they want to be warned, check if there's a newer version available
+            if ($All[0] -and -not $Single -or $All[0].Version -gt $Single.Version) {
+                Write-Warning "Newer version of '$Name' available: $($All[0].Version) -- Selected $($Single.Version) per constraint '$Version'"
+            }
         }
     }
 }

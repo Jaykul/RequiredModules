@@ -68,9 +68,7 @@ Describe "Install-RequiredModule" {
 
             Set-Content TestDrive:\RequiredModules.psd1 "@{ PowerShellGet = '1.0.0' }"
 
-            {
-                Install-RequiredModule -ErrorAction Stop -Quiet
-            } | Should -Not -Throw
+            Install-RequiredModule -ErrorAction Stop -Quiet
 
             Assert-MockCalled ConvertToRequiredModule -ModuleName RequiredModules -ParameterFilter {
                 $InputObject.Count | Should -Be 1
@@ -173,6 +171,72 @@ Describe "Install-RequiredModule" {
             Assert-MockCalled Save-Module -Module RequiredModules -ParameterFilter {
                 $Path -eq "TestDrive:\"
             }
+        }
+    }
+    Describe "Upgrade support" {
+        BeforeAll {
+            # Find would return a bunch of versions, including a newer one than what's installed
+            Mock Find-Module -Module RequiredModules {
+                $Versions = '3.0.0', '2.2.0', '2.1.3', '2.1.2', '2.1.1', '2.1.0', '2.0.0', '1.0.0'
+                foreach ($Module in $Name) {
+                    foreach ($Version in $Versions) {
+                        [PSCustomObject]@{
+                            PSTypeName               = "Microsoft.PowerShell.Commands.PSRepositoryItemInfo"
+                            Name                     = $Module
+                            Version                  = $Version
+                            Repository               = "PSGallery"
+                            RepositorySourceLocation = "https://www.powershellgallery.com/api/v2"
+                        }
+                    }
+                }
+            }
+
+            # But get will find a valid one already installed
+            Mock GetModuleVersion -Module RequiredModules {
+                foreach ($Module in $Name) {
+                    [PSCustomObject]@{
+                        PSTypeName               = "Microsoft.PowerShell.Commands.PSRepositoryItemInfo"
+                        Name                     = $Module
+                        Version                  = '2.2.0'
+                        Repository               = "PSGallery"
+                        RepositorySourceLocation = "https://www.powershellgallery.com/api/v2"
+                    }
+                    Write-Verbose "Found '$Name' hard-coded with version '2.2.0'"
+                }
+            }
+        }
+
+        It "Normally checks GetModuleVersion before FindModuleVersion" {
+            Install-RequiredModule @{ "PowerShellGet" = "[2.0,4.0)" } -Destination TestDrive:\
+
+            # GetModuleVersion should be called to search for the full range of valid versions
+            Assert-MockCalled GetModuleVersion -ModuleName RequiredModules -ParameterFilter {
+                $Name -eq "PowerShellGet" -and "[2.0.0, 4.0.0)" -eq $Version
+            }
+
+            # Since it finds it already installed, it should not call Find-Module or Save-Module (or Install-Module)
+            Assert-MockCalled Find-Module -ModuleName RequiredModules -Times 0 -Scope It
+            Assert-MockCalled Install-Module -ModuleName RequiredModules -Times 0 -Scope It
+            Assert-MockCalled Save-Module -ModuleName RequiredModules -Times 0 -Scope It
+        }
+
+        It "Checks GetModuleVersion after FindModuleVersion when -Upgrade" {
+            Install-RequiredModule @{ "PowerShellGet" = "[2.0,4.0)" } -Upgrade -Quiet -Destination TestDrive:\
+
+            # Find-Module gets called first, and returns 3.0.0 as the latest version ...
+            Assert-MockCalled Find-Module -ModuleName RequiredModules -ParameterFilter {
+                $Name -eq "PowerShellGet" -and
+                $AllVersions -eq $true
+            } -Times 1 -Scope It
+
+            # GetModuleVersion is only called (afterward), to check if that specific version is installed
+            Assert-MockCalled GetModuleVersion -ModuleName RequiredModules -ParameterFilter {
+                $Name -eq "PowerShellGet" -and "[3.0.0, 3.0.0]" -eq $Version
+            }
+
+            # And of course, we install it with Save-Module (because -Destination is specified)
+            Assert-MockCalled Save-Module -ModuleName RequiredModules -Times 1 -Scope It
+            Assert-MockCalled Install-Module -ModuleName RequiredModules -Times 0 -Scope It
         }
     }
     AfterAll {

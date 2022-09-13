@@ -49,6 +49,8 @@ Invoke-Pester -Configuration @{
         Enabled    = !$SkipCodeCoverage
         Path       = $ModuleUnderTest.Path
         OutputPath = "./coverage.xml"
+        CoveragePercentTarget = 80d # pester requires a decimal https://github.com/pester/Pester/issues/2108
+        UseBreakpoints = $false # use the experimental profiler support
     }
     TestResult   = @{
         Enabled = $true

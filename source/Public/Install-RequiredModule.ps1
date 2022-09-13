@@ -85,7 +85,11 @@ function Install-RequiredModule {
         [Switch]$Quiet,
 
         # If set, the specififed modules are imported (after they are installed, if necessary)
-        [Switch]$Import
+        [Switch]$Import,
+
+        # By default, Install-RequiredModule does not even check onlin if there's a suitable module available locally
+        # If Upgrade is set, it always checks for newer versions of the modules and will install the newest version that's valid
+        [Switch]$Upgrade
     )
 
     [string[]]$script:InfoTags = @("Install")
@@ -137,9 +141,11 @@ function Install-RequiredModule {
             }
         ) |
             # Which do not already have a valid version installed
-            Where-Object { -not ($_ | GetModuleVersion -Destination:$Destination -WarningAction SilentlyContinue) } |
+            Where-Object { $Upgrade -or -not ($_ | GetModuleVersion -Destination:$Destination -WarningAction SilentlyContinue) } |
             # Find a version on the gallery
-            FindModuleVersion -Recurse | Optimize-Dependency |
+            FindModuleVersion -Recurse -WarnIfNewer:$Upgrade | Optimize-Dependency |
+            # And if that's not already installed
+            Where-Object { -not $Upgrade -or (GetModuleVersion -Destination:$Destination -Name:$_.Name -Version:"[$($_.Version)]" -WarningAction SilentlyContinue) } |
             # And install it
             InstallModuleVersion -Destination:$Destination -Scope:$Scope -ErrorVariable InstallErrors
     } finally {
