@@ -24,6 +24,10 @@ function Install-RequiredModule {
 
             The default parameter-less usage reads the default 'RequiredModules.psd1' from the current folder and installs everything to your user scope PSModulePath
         .EXAMPLE
+            Install-RequiredModule -Destination .\Modules -Upgrade
+
+            Reads the default 'RequiredModules.psd1' from the current folder and installs everything to the specified "Modules" folder, upgrading any modules where there are newer (valid) versions than what's already installed.
+        .EXAMPLE
             Install-RequiredModule @{
                 "Configuration" = @{
                     Version = "[1.3.1,2.0)"

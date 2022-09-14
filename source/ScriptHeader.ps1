@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 5.0.0
+.VERSION 5.1.0
 
 .GUID 295c5e90-c699-4a39-8db2-cb71e564a32d
 
@@ -53,6 +53,10 @@
         Install-RequiredModule
 
         The default parameter-less usage reads the default 'RequiredModules.psd1' from the current folder and installs everything to your user scope PSModulePath
+    .EXAMPLE
+        Install-RequiredModule -Destination .\Modules -Upgrade
+
+        Reads the default 'RequiredModules.psd1' from the current folder and installs everything to the specified "Modules" folder, upgrading any modules where there are newer (valid) versions than what's already installed.
     .EXAMPLE
         Install-RequiredModule @{
             "Configuration" = @{
@@ -115,5 +119,9 @@ param(
     [Switch]$Quiet,
 
     # If set, the specififed modules are imported (after they are installed, if necessary)
-    [Switch]$Import
+    [Switch]$Import,
+
+    # By default, Install-RequiredModule does not even check onlin if there's a suitable module available locally
+    # If Upgrade is set, it always checks for newer versions of the modules and will install the newest version that's valid
+    [Switch]$Upgrade
 )
