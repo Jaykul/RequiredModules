@@ -84,7 +84,7 @@ function Optimize-Dependency {
         }
         foreach ($module in $InputObject){
             if ($Optimize_Dependency_Results.Add($module)) {
-                Write-Verbose "Include $(@($module | Select-Object $Properties | ForEach-Object { $_.PsObject.Properties.Value}) -join ', ')"
+                Write-Verbose " + Include $(@($module | Select-Object $Properties | ForEach-Object { $_.PsObject.Properties.Value}) -join ', ')"
                 $module
             }
         }

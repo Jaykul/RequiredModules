@@ -42,7 +42,7 @@ filter GetModuleVersion {
     if (-not $Found) {
         Write-Warning "Unable to find module '$Name' installed with version '$Version'"
     } else {
-        Write-Verbose "Found '$Name' installed with version '$($Found.Version)'"
+        Write-Verbose " + Found '$Name' installed with version '$($Found.Version)'"
         $Found
     }
 }

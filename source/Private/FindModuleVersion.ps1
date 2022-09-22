@@ -90,7 +90,7 @@ filter FindModuleVersion {
                 $Single = $Found[0]
                 Write-Warning "Dependency '$Name' with version '$($Single.Version)' found in untrusted repository '$($Single.Repository)' ($($Single.RepositorySourceLocation))"
             } else {
-                Write-Verbose "Found '$Name' available with version '$($Single.Version)' in trusted repository '$($Single.Repository)' ($($Single.RepositorySourceLocation))"
+                Write-Verbose " + Found '$Name' with version '$($Single.Version)' in trusted repository '$($Single.Repository)' ($($Single.RepositorySourceLocation))"
             }
 
             if ($Recurse) {

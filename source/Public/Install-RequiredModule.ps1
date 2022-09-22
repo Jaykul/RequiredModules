@@ -150,8 +150,17 @@ function Install-RequiredModule {
             FindModuleVersion -Recurse -WarnIfNewer:$Upgrade | Optimize-Dependency |
             # And if we're not upgrading (or THIS version is not already installed)
             Where-Object {
-                -not $Upgrade -or $(!($Exists = GetModuleVersion -Destination:$Destination -Name:$_.Name -Version:"[$($_.Version)]"))
-                Write-Verbose "Shall we install $($_.Name) v$($_.Version)? $(!$Upgrade) or $(!$Exists)..."
+                if (!$Upgrade) {
+                    $true
+                } else {
+                    $Installed = GetModuleVersion -Destination:$Destination -Name:$_.Name -Version:"[$($_.Version)]"
+                    if ($Installed) {
+                        Write-Verbose "$($_.Name) version $($_.Version) is already installed."
+                    } else {
+                        $true
+                    }
+                }
+
             } |
             # And install it
             InstallModuleVersion -Destination:$Destination -Scope:$Scope -ErrorVariable InstallErrors
@@ -165,9 +174,9 @@ function Install-RequiredModule {
         }
     }
     Write-Progress "Importing Modules" -Id 1 -ParentId 0
-    Write-Verbose "Importing Modules"
 
     if ($Import) {
+        Write-Verbose "Importing Modules"
         Remove-Module $Modules.Name -Force -ErrorAction Ignore -Verbose:$false
         $Modules | GetModuleVersion -OV InstalledModules | Import-Module -Passthru:(!$Quiet) -Verbose:$false -Scope Global
     } elseif ($InstallErrors) {
@@ -175,7 +184,7 @@ function Install-RequiredModule {
         $global:IRM_InstallErrors = $InstallErrors
         $global:IRM_RequiredModules = $Modules
         $global:IRM_InstalledModules = $InstalledModules
-    } else {
+    } elseif(!$Quiet) {
         Write-Warning "Module import skipped"
     }
 
