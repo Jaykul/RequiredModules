@@ -50,9 +50,11 @@ Describe "Install-RequiredModule" {
         }
 
         Mock Write-Warning -Module RequiredModules
-        Mock Install-Module { } -ModuleName RequiredModules
-        Mock Save-Module { } -ModuleName RequiredModules
-        Mock AddPSModulePath { } -ModuleName RequiredModules
+        Mock Install-Module -ModuleName RequiredModules
+        Mock Save-Module -ModuleName RequiredModules
+        Mock AddPSModulePath -ModuleName RequiredModules
+
+        # ONLY return true if we're checking that the install succeeded
         Mock GetModuleVersion { (Get-PSCallStack) -match "InstallModuleVersion" } -ModuleName RequiredModules
 
     }
@@ -193,25 +195,36 @@ Describe "Install-RequiredModule" {
 
             # But get will find a valid one already installed
             Mock GetModuleVersion -Module RequiredModules {
-                foreach ($Module in $Name) {
-                    [PSCustomObject]@{
-                        PSTypeName               = "Microsoft.PowerShell.Commands.PSRepositoryItemInfo"
-                        Name                     = $Module
-                        Version                  = '2.2.0'
-                        Repository               = "PSGallery"
-                        RepositorySourceLocation = "https://www.powershellgallery.com/api/v2"
+                Write-Verbose  "Pretending to search PSModulePath for '$Name' with version '$Version'"
+                # IF we're checking that the install succeeded, just return true
+                if ((Get-PSCallStack) -match "InstallModuleVersion") {
+                    return $true
+                }
+
+                # Otherwise return 2.2.0 if it's ok
+                $InstalledVersion = '2.2.0'
+                if (($Version.Float -and $Version.Float.Satisfies($InstalledVersion)) -or
+                    (!$Version.Float -and $Version.Satisfies($InstalledVersion))) {
+                    foreach ($Module in $Name) {
+                        [PSCustomObject]@{
+                            PSTypeName               = "Microsoft.PowerShell.Commands.PSRepositoryItemInfo"
+                            Name                     = $Module
+                            Version                  = $InstalledVersion
+                            Repository               = "PSGallery"
+                            RepositorySourceLocation = "https://www.powershellgallery.com/api/v2"
+                        }
+                        Write-Verbose "Found '$Name' hard-coded with version $InstalledVersion"
                     }
-                    Write-Verbose "Found '$Name' hard-coded with version '2.2.0'"
                 }
             }
         }
 
-        It "Normally checks GetModuleVersion before FindModuleVersion" {
-            Install-RequiredModule @{ "PowerShellGet" = "[2.0,4.0)" } -Destination TestDrive:\
+        It "Checks GetModuleVersion before FindModuleVersion normally" {
+            Install-RequiredModule @{ "PhoneyBaloney" = "[2.0,4.0)" } -Destination TestDrive:\
 
             # GetModuleVersion should be called to search for the full range of valid versions
             Assert-MockCalled GetModuleVersion -ModuleName RequiredModules -ParameterFilter {
-                $Name -eq "PowerShellGet" -and "[2.0.0, 4.0.0)" -eq $Version
+                $Name -eq "PhoneyBaloney" -and "[2.0.0, 4.0.0)" -eq $Version
             }
 
             # Since it finds it already installed, it should not call Find-Module or Save-Module (or Install-Module)
@@ -221,23 +234,63 @@ Describe "Install-RequiredModule" {
         }
 
         It "Checks GetModuleVersion after FindModuleVersion when -Upgrade" {
-            Install-RequiredModule @{ "PowerShellGet" = "[2.0,4.0)" } -Upgrade -Quiet -Destination TestDrive:\
+            Install-RequiredModule @{ "PhoneyBaloney" = "[2.0,4.0)" } -Upgrade -Quiet -Destination TestDrive:\
 
             # Find-Module gets called first, and returns 3.0.0 as the latest version ...
             Assert-MockCalled Find-Module -ModuleName RequiredModules -ParameterFilter {
-                $Name -eq "PowerShellGet" -and
+                $Name -eq "PhoneyBaloney" -and
                 $AllVersions -eq $true
             } -Times 1 -Scope It
 
             # GetModuleVersion is only called (afterward), to check if that specific version is installed
             Assert-MockCalled GetModuleVersion -ModuleName RequiredModules -ParameterFilter {
-                $Name -eq "PowerShellGet" -and "[3.0.0, 3.0.0]" -eq $Version
+                $Name -eq "PhoneyBaloney" -and "[3.0.0, 3.0.0]" -eq $Version
             }
 
             # And of course, we install it with Save-Module (because -Destination is specified)
             Assert-MockCalled Save-Module -ModuleName RequiredModules -Times 1 -Scope It
             Assert-MockCalled Install-Module -ModuleName RequiredModules -Times 0 -Scope It
         }
+
+        It "Does not reinstall unless -Force" {
+
+            # Pretend the latest version is already installed
+            Mock GetModuleVersion -Module RequiredModules {
+                Write-Verbose  "Pretending to search PSModulePath for '$Name' with version '$Version'"
+                # IF we're checking that the install succeeded, just return true
+                if ((Get-PSCallStack) -match "InstallModuleVersion") {
+                    return $true
+                }
+                foreach ($Module in $Name) {
+                    [PSCustomObject]@{
+                        PSTypeName               = "Microsoft.PowerShell.Commands.PSRepositoryItemInfo"
+                        Name                     = $Module
+                        Version                  = '3.0.0'
+                        Repository               = "PSGallery"
+                        RepositorySourceLocation = "https://www.powershellgallery.com/api/v2"
+                    }
+                    Write-Verbose "Found '$Name' hard-coded with version '3.0.0'"
+                }
+            }
+
+            Install-RequiredModule @{ "PhoneyBaloney" = "[2.0,4.0)" } -Upgrade -Quiet -Destination TestDrive:\
+
+            # Find-Module gets called first, and returns 3.0.0 as the latest version ...
+            Assert-MockCalled Find-Module -ModuleName RequiredModules -ParameterFilter {
+                $Name -eq "PhoneyBaloney" -and
+                $AllVersions -eq $true
+            } -Times 1 -Scope It
+
+            # GetModuleVersion is only called (afterward), to check if that specific version is installed
+            Assert-MockCalled GetModuleVersion -ModuleName RequiredModules -ParameterFilter {
+                $Name -eq "PhoneyBaloney" -and "[3.0.0, 3.0.0]" -eq $Version
+            }
+
+            # And of course, we DO NOT install it
+            Assert-MockCalled Save-Module -ModuleName RequiredModules -Times 0 -Scope It
+            Assert-MockCalled Install-Module -ModuleName RequiredModules -Times 0 -Scope It
+        }
+
     }
     AfterAll {
         foreach ($r in Get-PSRepository) {

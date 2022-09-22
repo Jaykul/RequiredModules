@@ -144,12 +144,15 @@ function Install-RequiredModule {
                 }
             }
         ) |
-            # Which do not already have a valid version installed
+            # Which do not already have a valid version installed (or that we're upgrading)
             Where-Object { $Upgrade -or -not ($_ | GetModuleVersion -Destination:$Destination -WarningAction SilentlyContinue) } |
-            # Find a version on the gallery
+            # Find a version on the gallery (if we're upgrading, warn if there are versions that are excluded)
             FindModuleVersion -Recurse -WarnIfNewer:$Upgrade | Optimize-Dependency |
-            # And if that's not already installed
-            Where-Object { -not $Upgrade -or (GetModuleVersion -Destination:$Destination -Name:$_.Name -Version:"[$($_.Version)]" -WarningAction SilentlyContinue) } |
+            # And if we're not upgrading (or THIS version is not already installed)
+            Where-Object {
+                -not $Upgrade -or $(!($Exists = GetModuleVersion -Destination:$Destination -Name:$_.Name -Version:"[$($_.Version)]"))
+                Write-Verbose "Shall we install $($_.Name) v$($_.Version)? $(!$Upgrade) or $(!$Exists)..."
+            } |
             # And install it
             InstallModuleVersion -Destination:$Destination -Scope:$Scope -ErrorVariable InstallErrors
     } finally {

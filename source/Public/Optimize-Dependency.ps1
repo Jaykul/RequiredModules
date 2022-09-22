@@ -60,9 +60,10 @@ function Optimize-Dependency {
     }
     process {
         $null = $PSBoundParameters.Remove("InputObject")
-        if ($DebugPreference) {
+
+        if ($VerbosePreference) {
             $Pad = "  " * ${ Recursion Ancestors }.Count
-            Write-Debug "${Pad}ENTER: Optimize-Dependency: $(@($InputObject | Select-Object $Properties | ForEach-Object { $_.PsObject.Properties.Value  -join ','}) -join '; ')"
+            Write-Verbose  "${Pad}Optimizing Dependencies of $(@($InputObject | Select-Object $Properties | ForEach-Object { $_.PsObject.Properties.Value  -join ','}) -join '; ')"
         }
 
         foreach ($IO in $InputObject) {
@@ -81,10 +82,10 @@ function Optimize-Dependency {
             $PSBoundParameters[" Recursion Ancestors "] = $Optimize_Dependency_Parents
             ForEach-Object -In $IO -Process $Dependency | Optimize-Dependency @PSBoundParameters
         }
-        $InputObject | ForEach-Object {
-            if ($Optimize_Dependency_Results.Add($_)) {
-                Write-Verbose "Added $(@($_ | Select-Object $Properties | ForEach-Object { $_.PsObject.Properties.Value}) -join ',')"
-                $_
+        foreach ($module in $InputObject){
+            if ($Optimize_Dependency_Results.Add($module)) {
+                Write-Verbose "Include $(@($module | Select-Object $Properties | ForEach-Object { $_.PsObject.Properties.Value}) -join ', ')"
+                $module
             }
         }
         if ($DebugPreference) {
