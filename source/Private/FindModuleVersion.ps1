@@ -75,7 +75,7 @@ filter FindModuleVersion {
 
         # Find returns modules in Feed and then Version order
         # Before PowerShell 6, sorting didn't preserve order, so we avoid it
-        $Found = Find-Module @ModuleParam -AllVersions -OutVariable All | Where-Object {
+        $Found = Find-Module @ModuleParam -AllVersions -OutVariable All -ErrorAction SilentlyContinue | Where-Object {
                 $_.Name -eq $Name -and
                 ($Version.Float -and $Version.Float.Satisfies($_.Version.ToString())) -or
                 (!$Version.Float -and $Version.Satisfies($_.Version.ToString()))

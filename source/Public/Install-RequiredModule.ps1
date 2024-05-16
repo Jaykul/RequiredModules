@@ -118,7 +118,7 @@ function Install-RequiredModule {
 
     if ($Destination) {
         Write-Debug "Using manually specified Destination directory rather than default Scope"
-        AddPSModulePath $Destination -Clean:$CleanDestination
+        $Destination = AddPSModulePath $Destination -Clean:$CleanDestination
     }
 
     Write-Progress "Verifying PSRepository trust" -Id 1 -ParentId 0

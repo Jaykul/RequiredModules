@@ -45,7 +45,7 @@ Register-PSRepository -Default -ErrorAction Ignore -InstallationPolicy Trusted
 Get-PSRepository -Name PSGallery | Set-PSRepository -InstallationPolicy Trusted
 ```
 
-By default, we only install from trusted repositories, but there is a new TrustRegisteredRepositories switch which ensures all of the repositories that are registered are treated as trusted for the purposes of installing the required modules.
+By default, we only install from trusted repositories, but there is a new `-TrustRegisteredRepositories` switch which ensures all of the repositories that are registered are treated as trusted for the purposes of installing the required modules.
 
 There is a new syntax for the RequiredModules hashtables to support specifying a specific repository for each module.
 
@@ -54,8 +54,6 @@ Remember, Install-RequiredModule does not explicitly require PowerShellGet. Powe
 ## Missing Functionality
 
 - We need to handle PowerShellGet (and PackageManagement) specially. If they are in the list, install them first AND import them. This would allow clean environments to install pre-release modules.
-- We should read the hashtable in RequiredModules.psd1 in order. The Configuration module can do this, but obviously it would be problematic for Install-RequiredModule to have a module dependency...
-
 
 
 ## Contributing
