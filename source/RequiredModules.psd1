@@ -11,14 +11,13 @@
 
             # Release Notes have to be here, so we can update them
             ReleaseNotes = '
-            5.1.0 (preview)
-                SORTING
-                    - Add Optimize-Dependency, and use it to make sure we install dependencies in order
-                UPGRADE
-                    - Add -Upgrade to allow searching for newer versions of installed modules while still enforcing the version range
-                    - Includes a warning when in -Upgrade mode, if there is a newer version that will not be installed because of the version range
-                MISC
-                    - Finally got around to writing more tests. Fixed stuff that did not work as expected
+            5.1.0 Supports Upgrading Modules
+                - Added -Upgrade to allow searching for newer versions of installed modules while still enforcing the version range
+                - Includes a warning when in -Upgrade mode, if there is a newer version that will not be installed because of the version range
+                Also...
+                - Added Optimize-Dependency, and use it to make sure we install dependencies in order
+                - Work around an issue installing modules where OLD versions have a dependency that has been de-listed
+                - Wrote more tests. Fixed stuff that did not work as expected
             5.0.5 Fix the -Destination parameter
             5.0.2 Fix a bug with PowerShellGet 1.0.0.1
             5.0.1 Fix PowerShell 5 .Where bug again (sorry)
