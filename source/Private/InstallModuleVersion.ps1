@@ -84,6 +84,7 @@ filter InstallModuleVersion {
     $null = $PSBoundParameters.Remove("Repository")
     $null = $PSBoundParameters.Remove("Credential")
     $null = $PSBoundParameters.Remove("Scope")
+
     if (GetModuleVersion @PSBoundParameters -WarningAction SilentlyContinue) {
         $PSCmdlet.WriteInformation("Installed module '$($Name)' with version '$($Version)'$(if($Repository){ " from $Repository" })", $script:InfoTags)
     } else {

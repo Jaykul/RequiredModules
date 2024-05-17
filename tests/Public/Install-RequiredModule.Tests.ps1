@@ -12,26 +12,49 @@ Describe "Install-RequiredModule" {
             }
         } -ModuleName RequiredModules
 
+        $PreRegisteredRepositories = Get-PSRepository
+        Register-PSRepository -Name "Untrusted Fake Repo" -SourceLocation "https://www.myget.org/F/fireeye/api/v2" -InstallationPolicy Untrusted
+        Register-PSRepository -Default -InstallationPolicy Trusted 2>$null
+
+
         # We'll test FindModuleVersion's logic
-        Mock Find-Module {
+        Mock Find-Module -Module RequiredModules {
             $Versions = @('3.5.0', '3.4.5', '3.4.4', '3.4.3', '3.4.2', '3.4.1', '3.4.0', '3.3.0', '3.2.0', '3.1.1', '3.1.0', '3.0.2', '3.0.1', '3.0.0', '2.2.4', '2.2.3', '2.2.2', '2.2.1', '2.2.0', '2.1.3', '2.1.2', '2.1.1', '2.1.0', '2.0.1', '2.0.0', '1.2.0', '1.1.5', '1.1.4', '1.1.3', '1.1.2', '1.1.1', '1.1.0', '1.0.4', '1.0.3', '1.0.2', '1.0.1', '1.0.0')
-            foreach($Module in $Name) {
-                foreach($Repo in @( "https://pkgs.dev.azure.com/poshcode/_packaging/PowerShell/nuget/v2"
-                                    "https://www.powershellgallery.com/api/v2" ).Where{ -not $Repository -or $_ -in $Repository }) {
+            foreach ($Module in $Name) {
+                $Repos = @(
+                        [PSCustomObject]@{Name = "PSGallery"; SourceLocation = "https://www.powershellgallery.com/api/v2" }
+                        [PSCustomObject]@{Name = "Untrusted Fake Repo"; SourceLocation = "https://www.myget.org/F/fireeye/api/v2" }
+                    ).Where{ -not $Repository -or $_.SourceLocation -in $Repository -or $_.Name -in $Repository }
+
+                if (!$Repos) {
+                    $Repos = @(
+                        @{
+                            Name = $Repository
+                            SourceLocation = $Repository
+                        }
+                    )
+                }
+
+                foreach ($Repo in $Repos) {
                     foreach ($Version in $Versions) {
                         [PSCustomObject]@{
-                            PSTypeName = "Microsoft.PowerShell.Commands.PSRepositoryItemInfo"
+                            PSTypeName               = "Microsoft.PowerShell.Commands.PSRepositoryItemInfo"
                             Name                     = $Module
                             Version                  = $Version
-                            RepositorySourceLocation = $Repo
+                            Repository               = $Repo.Name
+                            RepositorySourceLocation = $Repo.SourceLocation
                         }
                     }
                 }
             }
-        } -ModuleName RequiredModules
+        }
 
-        Mock Install-Module { } -ModuleName RequiredModules
-        Mock Save-Module { } -ModuleName RequiredModules
+        Mock Write-Warning -Module RequiredModules
+        Mock Install-Module -ModuleName RequiredModules
+        Mock Save-Module -ModuleName RequiredModules
+        Mock AddPSModulePath -ModuleName RequiredModules
+
+        # ONLY return true if we're checking that the install succeeded
         Mock GetModuleVersion { (Get-PSCallStack) -match "InstallModuleVersion" } -ModuleName RequiredModules
 
     }
@@ -47,9 +70,7 @@ Describe "Install-RequiredModule" {
 
             Set-Content TestDrive:\RequiredModules.psd1 "@{ PowerShellGet = '1.0.0' }"
 
-            {
-                Install-RequiredModule -ErrorAction Stop
-            } | Should -Not -Throw
+            Install-RequiredModule -ErrorAction Stop -Quiet
 
             Assert-MockCalled ConvertToRequiredModule -ModuleName RequiredModules -ParameterFilter {
                 $InputObject.Count | Should -Be 1
@@ -57,24 +78,228 @@ Describe "Install-RequiredModule" {
                 $true
             }
         }
-    }
 
+        It "Warns but tries to install from untrusted repositories" {
+            Set-Content TestDrive:\RequiredModules.psd1 "@{
+                PowerShellGet = @{
+                    Version    = '1.0.0'
+                    Repository = 'Untrusted Fake Repo'
+                }
+            }"
 
-    Describe "But it also accepts a hashtable inline" {
-        Install-RequiredModule @{
-            "PowerShellGet"    = "2.0.4"
-            "Configuration"    = "[1.2.1,2.0)"
-            "Pester"           = "*"
-            "PSScriptAnalyzer" = "1.*"
-            "SitecoreDockerTools"    = @{
-                Version = "10.*"
-                Repository = "https://sitecore.myget.org/F/sc-powershell/api/v2"
-                Credential = [PSCredential]::Empty
+            Install-RequiredModule -ErrorAction Stop -Quiet
+
+            Assert-MockCalled Write-Warning -ModuleName RequiredModules -ParameterFilter {
+                $Message -Match "Dependency 'PowerShellGet' with version '3.5.0' found in untrusted repository 'Untrusted Fake Repo'.*"
+            }
+
+            Assert-MockCalled Install-Module -ModuleName RequiredModules -ParameterFilter {
+                $Name | Should -Be "PowerShellGet"
+                $Repository | Should -Be 'Untrusted Fake Repo'
+                $true
+            }
+        }
+
+        It "Supports trusting all registered repositories" {
+            Set-Content TestDrive:\RequiredModules.psd1 "@{
+                PowerShellGet = @{
+                    Version    = '1.0.0'
+                    Repository = 'Untrusted Fake Repo'
+                }
+            }"
+
+            Install-RequiredModule -ErrorAction Stop -Quiet -TrustRegisteredRepositories
+
+            Assert-MockCalled Install-Module -ModuleName RequiredModules -ParameterFilter {
+                $Name | Should -Be "PowerShellGet"
+                $Repository | Should -Be 'Untrusted Fake Repo'
+                $true
+            }
+        }
+
+        It "Warns but tries to install from unknown repositories" {
+            Set-Content TestDrive:\RequiredModules.psd1 "@{
+                PowerShellGet = @{
+                    Version    = '1.0.0'
+                    Repository = 'https://pkgs.dev.azure.com/poshcode/_packaging/PowerShell/nuget/v2'
+                }
+            }"
+
+            Install-RequiredModule -ErrorAction Stop -Quiet
+
+            Assert-MockCalled Write-Warning -ModuleName RequiredModules -ParameterFilter {
+                $Message -Match "Dependency 'PowerShellGet' with version '3.5.0' found in untrusted repository.*"
+            }
+
+            Assert-MockCalled Install-Module -ModuleName RequiredModules -ParameterFilter {
+                $Name | Should -Be "PowerShellGet"
+                $true
             }
         }
     }
 
+    Describe "But it also accepts a hashtable inline" {
+        It "Will install all modules, but hashtables are not necessarily ordered" {
+            $Modules = @{
+                "PowerShellGet"    = "2.0.4"
+                "Configuration"    = "[1.0.1,2.0)"
+                "Pester"           = "*"
+                "PSScriptAnalyzer" = @{
+                    Repository = "https://www.myget.org/F/fireeye/api/v2"
+                    Version    = "1.*"
+                }
+            }
+
+            Install-RequiredModule $Modules -Quiet
+
+            foreach($M in $Modules.Keys) {
+                Assert-MockCalled Install-Module -ModuleName RequiredModules -ParameterFilter {
+                    $Name -eq $M
+                }
+            }
+
+            Assert-MockCalled Write-Warning -ParameterFilter {
+                $Message -Match "'PSScriptAnalyzer' with version '1.2.0' found in untrusted repository"
+            } -ModuleName RequiredModules -Scope It
+        }
+
+        It "Supports installing into any file path" {
+            Install-RequiredModule @{ "PowerShellGet" = "1.0.0" } -Quiet -Destination TestDrive:\
+
+            Assert-MockCalled AddPSModulePath -Module RequiredModules -ParameterFilter {
+                $Path -eq "TestDrive:\"
+            }
+
+            Assert-MockCalled Save-Module -Module RequiredModules -ParameterFilter {
+                $Path -eq "TestDrive:\"
+            }
+        }
+    }
+    Describe "Upgrade support" {
+        BeforeAll {
+            # Find would return a bunch of versions, including a newer one than what's installed
+            Mock Find-Module -Module RequiredModules {
+                $Versions = '3.0.0', '2.2.0', '2.1.3', '2.1.2', '2.1.1', '2.1.0', '2.0.0', '1.0.0'
+                foreach ($Module in $Name) {
+                    foreach ($Version in $Versions) {
+                        [PSCustomObject]@{
+                            PSTypeName               = "Microsoft.PowerShell.Commands.PSRepositoryItemInfo"
+                            Name                     = $Module
+                            Version                  = $Version
+                            Repository               = "PSGallery"
+                            RepositorySourceLocation = "https://www.powershellgallery.com/api/v2"
+                        }
+                    }
+                }
+            }
+
+            # But get will find a valid one already installed
+            Mock GetModuleVersion -Module RequiredModules {
+                Write-Verbose  "Pretending to search PSModulePath for '$Name' with version '$Version'"
+                # IF we're checking that the install succeeded, just return true
+                if ((Get-PSCallStack) -match "InstallModuleVersion") {
+                    return $true
+                }
+
+                # Otherwise return 2.2.0 if it's ok
+                $InstalledVersion = '2.2.0'
+                if (($Version.Float -and $Version.Float.Satisfies($InstalledVersion)) -or
+                    (!$Version.Float -and $Version.Satisfies($InstalledVersion))) {
+                    foreach ($Module in $Name) {
+                        [PSCustomObject]@{
+                            PSTypeName               = "Microsoft.PowerShell.Commands.PSRepositoryItemInfo"
+                            Name                     = $Module
+                            Version                  = $InstalledVersion
+                            Repository               = "PSGallery"
+                            RepositorySourceLocation = "https://www.powershellgallery.com/api/v2"
+                        }
+                        Write-Verbose "Found '$Name' hard-coded with version $InstalledVersion"
+                    }
+                }
+            }
+        }
+
+        It "Checks GetModuleVersion before FindModuleVersion normally" {
+            Install-RequiredModule @{ "PhoneyBaloney" = "[2.0,4.0)" } -Destination TestDrive:\
+
+            # GetModuleVersion should be called to search for the full range of valid versions
+            Assert-MockCalled GetModuleVersion -ModuleName RequiredModules -ParameterFilter {
+                $Name -eq "PhoneyBaloney" -and "[2.0.0, 4.0.0)" -eq $Version
+            }
+
+            # Since it finds it already installed, it should not call Find-Module or Save-Module (or Install-Module)
+            Assert-MockCalled Find-Module -ModuleName RequiredModules -Times 0 -Scope It
+            Assert-MockCalled Install-Module -ModuleName RequiredModules -Times 0 -Scope It
+            Assert-MockCalled Save-Module -ModuleName RequiredModules -Times 0 -Scope It
+        }
+
+        It "Checks GetModuleVersion after FindModuleVersion when -Upgrade" {
+            Install-RequiredModule @{ "PhoneyBaloney" = "[2.0,4.0)" } -Upgrade -Quiet -Destination TestDrive:\
+
+            # Find-Module gets called first, and returns 3.0.0 as the latest version ...
+            Assert-MockCalled Find-Module -ModuleName RequiredModules -ParameterFilter {
+                $Name -eq "PhoneyBaloney" -and
+                $AllVersions -eq $true
+            } -Times 1 -Scope It
+
+            # GetModuleVersion is only called (afterward), to check if that specific version is installed
+            Assert-MockCalled GetModuleVersion -ModuleName RequiredModules -ParameterFilter {
+                $Name -eq "PhoneyBaloney" -and "[3.0.0, 3.0.0]" -eq $Version
+            }
+
+            # And of course, we install it with Save-Module (because -Destination is specified)
+            Assert-MockCalled Save-Module -ModuleName RequiredModules -Times 1 -Scope It
+            Assert-MockCalled Install-Module -ModuleName RequiredModules -Times 0 -Scope It
+        }
+
+        It "Does not reinstall unless -Force" {
+
+            # Pretend the latest version is already installed
+            Mock GetModuleVersion -Module RequiredModules {
+                Write-Verbose  "Pretending to search PSModulePath for '$Name' with version '$Version'"
+                # IF we're checking that the install succeeded, just return true
+                if ((Get-PSCallStack) -match "InstallModuleVersion") {
+                    return $true
+                }
+                foreach ($Module in $Name) {
+                    [PSCustomObject]@{
+                        PSTypeName               = "Microsoft.PowerShell.Commands.PSRepositoryItemInfo"
+                        Name                     = $Module
+                        Version                  = '3.0.0'
+                        Repository               = "PSGallery"
+                        RepositorySourceLocation = "https://www.powershellgallery.com/api/v2"
+                    }
+                    Write-Verbose "Found '$Name' hard-coded with version '3.0.0'"
+                }
+            }
+
+            Install-RequiredModule @{ "PhoneyBaloney" = "[2.0,4.0)" } -Upgrade -Quiet -Destination TestDrive:\
+
+            # Find-Module gets called first, and returns 3.0.0 as the latest version ...
+            Assert-MockCalled Find-Module -ModuleName RequiredModules -ParameterFilter {
+                $Name -eq "PhoneyBaloney" -and
+                $AllVersions -eq $true
+            } -Times 1 -Scope It
+
+            # GetModuleVersion is only called (afterward), to check if that specific version is installed
+            Assert-MockCalled GetModuleVersion -ModuleName RequiredModules -ParameterFilter {
+                $Name -eq "PhoneyBaloney" -and "[3.0.0, 3.0.0]" -eq $Version
+            }
+
+            # And of course, we DO NOT install it
+            Assert-MockCalled Save-Module -ModuleName RequiredModules -Times 0 -Scope It
+            Assert-MockCalled Install-Module -ModuleName RequiredModules -Times 0 -Scope It
+        }
+
+    }
     AfterAll {
+        foreach ($r in Get-PSRepository) {
+            if ($r.Name -notin @($PreRegisteredRepositories.Name)) {
+                Unregister-PSRepository -Name $r.Name
+            } else {
+                Set-PSRepository -Name $r.Name -InstallationPolicy $r.InstallationPolicy
+            }
+        }
         Pop-Location
     }
 }

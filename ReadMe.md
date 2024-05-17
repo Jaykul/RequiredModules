@@ -26,6 +26,16 @@ The `Install-RequiredModule` command parses a hashtable from a file (named `Requ
 
 ## Latest Changes
 
+### 5.1.0 Supports Upgrades
+
+This version supports upgrading modules you already have installed. Normally, `Install-RequiredModule` will only search online after determining that you don't have a valid version installed already. Now with the `-Upgrade` switch, it will search online first, and select the highest valid version, and _then_ check if you have _that version_ installed. If it's not already installed, it will install it.
+
+In `-Upgrade` mode, you'll get warnings about the latest module version if it's newer than the valid range you've specified. Please let me know if this is a problem! I'm considering having those warnings suppressed by the `-Quiet` switch, but they are not, currently.
+
+This version also adds an `Optimize-Dependency` command to the module version (currently available on PSGallery if you `-AllowPrerelease`). This command will sort modules into dependency order (so that dependencies are installed before the modules that depend on them).
+
+### 5.0.0 Specify repositories
+
 This version allows installing from any trusted repository! In this version, we no longer only (and automatically) use PSGallery. Instead, you must ensure that there is a repository registered and trusted, and we'll use whatever repostories you have trusted.
 
 For instance, you could ensure the default PSGallery is registered, and trust it:
@@ -35,7 +45,7 @@ Register-PSRepository -Default -ErrorAction Ignore -InstallationPolicy Trusted
 Get-PSRepository -Name PSGallery | Set-PSRepository -InstallationPolicy Trusted
 ```
 
-By default, we only install from trusted repositories, but there is a new TrustRegisteredRepositories switch which ensures all of the repositories that are registered are treated as trusted for the purposes of installing the required modules.
+By default, we only install from trusted repositories, but there is a new `-TrustRegisteredRepositories` switch which ensures all of the repositories that are registered are treated as trusted for the purposes of installing the required modules.
 
 There is a new syntax for the RequiredModules hashtables to support specifying a specific repository for each module.
 
@@ -44,8 +54,6 @@ Remember, Install-RequiredModule does not explicitly require PowerShellGet. Powe
 ## Missing Functionality
 
 - We need to handle PowerShellGet (and PackageManagement) specially. If they are in the list, install them first AND import them. This would allow clean environments to install pre-release modules.
-- We should read the hashtable in RequiredModules.psd1 in order. The Configuration module can do this, but obviously it would be problematic for Install-RequiredModule to have a module dependency...
-
 
 
 ## Contributing

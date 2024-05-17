@@ -24,6 +24,10 @@ function Install-RequiredModule {
 
             The default parameter-less usage reads the default 'RequiredModules.psd1' from the current folder and installs everything to your user scope PSModulePath
         .EXAMPLE
+            Install-RequiredModule -Destination .\Modules -Upgrade
+
+            Reads the default 'RequiredModules.psd1' from the current folder and installs everything to the specified "Modules" folder, upgrading any modules where there are newer (valid) versions than what's already installed.
+        .EXAMPLE
             Install-RequiredModule @{
                 "Configuration" = @{
                     Version = "[1.3.1,2.0)"
@@ -85,7 +89,11 @@ function Install-RequiredModule {
         [Switch]$Quiet,
 
         # If set, the specififed modules are imported (after they are installed, if necessary)
-        [Switch]$Import
+        [Switch]$Import,
+
+        # By default, Install-RequiredModule does not even check onlin if there's a suitable module available locally
+        # If Upgrade is set, it always checks for newer versions of the modules and will install the newest version that's valid
+        [Switch]$Upgrade
     )
 
     [string[]]$script:InfoTags = @("Install")
@@ -110,7 +118,7 @@ function Install-RequiredModule {
 
     if ($Destination) {
         Write-Debug "Using manually specified Destination directory rather than default Scope"
-        AddPSModulePath $Destination -Clean:$CleanDestination
+        $Destination = AddPSModulePath $Destination -Clean:$CleanDestination
     }
 
     Write-Progress "Verifying PSRepository trust" -Id 1 -ParentId 0
@@ -136,10 +144,24 @@ function Install-RequiredModule {
                 }
             }
         ) |
-            # Which do not already have a valid version installed
-            Where-Object { -not ($_ | GetModuleVersion -Destination:$Destination -WarningAction SilentlyContinue) } |
-            # Find a version on the gallery
-            FindModuleVersion |
+            # Which do not already have a valid version installed (or that we're upgrading)
+            Where-Object { $Upgrade -or -not ($_ | GetModuleVersion -Destination:$Destination -WarningAction SilentlyContinue) } |
+            # Find a version on the gallery (if we're upgrading, warn if there are versions that are excluded)
+            FindModuleVersion -Recurse -WarnIfNewer:$Upgrade | Optimize-Dependency |
+            # And if we're not upgrading (or THIS version is not already installed)
+            Where-Object {
+                if (!$Upgrade) {
+                    $true
+                } else {
+                    $Installed = GetModuleVersion -Destination:$Destination -Name:$_.Name -Version:"[$($_.Version)]"
+                    if ($Installed) {
+                        Write-Verbose "$($_.Name) version $($_.Version) is already installed."
+                    } else {
+                        $true
+                    }
+                }
+
+            } |
             # And install it
             InstallModuleVersion -Destination:$Destination -Scope:$Scope -ErrorVariable InstallErrors
     } finally {
@@ -152,9 +174,9 @@ function Install-RequiredModule {
         }
     }
     Write-Progress "Importing Modules" -Id 1 -ParentId 0
-    Write-Verbose "Importing Modules"
 
     if ($Import) {
+        Write-Verbose "Importing Modules"
         Remove-Module $Modules.Name -Force -ErrorAction Ignore -Verbose:$false
         $Modules | GetModuleVersion -OV InstalledModules | Import-Module -Passthru:(!$Quiet) -Verbose:$false -Scope Global
     } elseif ($InstallErrors) {
@@ -162,7 +184,7 @@ function Install-RequiredModule {
         $global:IRM_InstallErrors = $InstallErrors
         $global:IRM_RequiredModules = $Modules
         $global:IRM_InstalledModules = $InstalledModules
-    } else {
+    } elseif(!$Quiet) {
         Write-Warning "Module import skipped"
     }
 

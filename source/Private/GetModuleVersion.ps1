@@ -42,7 +42,8 @@ filter GetModuleVersion {
     if (-not $Found) {
         Write-Warning "Unable to find module '$Name' installed with version '$Version'"
     } else {
-        Write-Verbose "Found '$Name' installed with version '$($Found.Version)'"
+        Write-Verbose " + Found '$Name' installed with version '$($Found.Version)'"
+        $PSCmdlet.WriteInformation("Found module '$($Name)' with version '$($Found.Version)'$(if($Destination){ " in $Destination" })", $script:InfoTags)
         $Found
     }
 }

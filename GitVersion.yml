@@ -1,9 +1,13 @@
 mode: Mainline
-commit-message-incrementing: MergeMessageOnly
 
 assembly-versioning-format: '{Major}.{Minor}.{Patch}.{env:BUILDCOUNT ?? 0}'
 assembly-informational-format: '{NuGetVersionV2}+Build.{env:BUILDCOUNT ?? 0}.Date.{CommitDate}.Branch.{env:SAFEBRANCHNAME ?? unknown}.Sha.{Sha}'
 commit-date-format: yyyyMMddTHHmmss
+
+major-version-bump-message: '\+?semver:\s?(breaking|major)'
+minor-version-bump-message: '\+?semver:\s?(feature|minor)'
+patch-version-bump-message: '\+?semver:\s?(fix|patch)'
+commit-message-incrementing: Enabled
 
 branches:
   main:

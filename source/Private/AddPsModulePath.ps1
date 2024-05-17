@@ -14,7 +14,7 @@ filter AddPSModulePath {
     if (-not (Test-Path $Path -PathType Container)) {
         # NOTE: If it's there as a file, then
         #       New-Item will throw a System.IO.IOException "An item with the specified name ... already exists"
-        New-Item $Path -ItemType Directory -ErrorAction Stop
+        $null = New-Item $Path -ItemType Directory -ErrorAction Stop
         Write-Verbose "Created Destination directory: $(Convert-Path $Path)"
     } elseif (Get-ChildItem $Path) {
         # If it's there as a directory that's not empty, maybe they said we should clean it?
@@ -24,7 +24,7 @@ filter AddPSModulePath {
             Write-Warning "The folder at '$Path' is not empty, removing all content from '$($Path)'"
             try {
                 Remove-Item $Path -Recurse -ErrorAction Stop # No -Force -- if this fails, you should handle it yourself
-                New-Item $Path -ItemType Directory
+                $null = New-Item $Path -ItemType Directory
             } catch {
                 $PSCmdlet.WriteError(
                     [System.Management.Automation.ErrorRecord]::new(
