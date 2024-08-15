@@ -69,6 +69,7 @@ filter InstallModuleVersion {
         $ModuleOptions += @{
             Path = $Destination
         }
+        Write-Debug "Save-Module $($ModuleOptions.GetEnumerator() | ForEach-Object { "-$($_.Key) '$($_.Value)'" })"
         Save-Module @ModuleOptions
     } else {
         $ModuleOptions += @{
@@ -77,6 +78,7 @@ filter InstallModuleVersion {
             AllowClobber       = $true
             Scope              = $Scope
         }
+        Write-Debug "Install-Module $($ModuleOptions.GetEnumerator() | ForEach-Object { "-$($_.Key) '$($_.Value)'" })"
         Install-Module @ModuleOptions
     }
 

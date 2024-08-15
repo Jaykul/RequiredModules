@@ -7,17 +7,21 @@ Describe "FindModuleVersion calls Find-Module and filters based on the VersionRa
         $PreRegisteredRepositories = Get-PSRepository
 
         Register-PSRepository -Name "Trusted Fake Repo" -SourceLocation "https://www.myget.org/F/aspnetwebstacknightly/api/v2" -InstallationPolicy Trusted
-        Register-PSRepository -Name "Untrusted Fake Repo" -SourceLocation "https://www.myget.org/F/fireeye/api/v2" -InstallationPolicy Untrusted
+        Register-PSRepository -Name "Untrusted Fake Repo" -SourceLocation "https://www.myget.org/F/aspnet-contrib/api/v2" -InstallationPolicy Untrusted
         Register-PSRepository -Default -InstallationPolicy Trusted 2>$null
 
         # This mock dumps a _ton_ of module info looking things for every query ....
         # Find-Module returns results HIGHEST to LOWEST (which is critical for our logic)
         Mock Find-Module -Module RequiredModules {
-            $Versions = @('3.5.0', '3.4.5', '3.4.4', '3.4.3', '3.4.2', '3.4.1', '3.4.0', '3.3.0', '3.2.0', '3.1.1', '3.1.0', '3.0.2', '3.0.1', '3.0.0', '2.2.4', '2.2.3', '2.2.2', '2.2.1', '2.2.0', '2.1.3', '2.1.2', '2.1.1', '2.1.0', '2.0.1', '2.0.0', '1.2.0', '1.1.5', '1.1.4', '1.1.3', '1.1.2', '1.1.1', '1.1.0', '1.0.4', '1.0.3', '1.0.2', '1.0.1', '1.0.0')
             # Write-Host "Given a big list of module versions for ${Name}: $Versions"
+            if ($AllowPrerelease) {
+                $Versions = @('3.2.0-scriptgenerators0009','3.1.0','3.1.0-AOP01','3.0.2','3.0.1','3.0.0','2.0.0','2.0.0-VersionedOutput','2.0.0-ModuleName','1.7.0','1.6.0','1.6.0-beta','1.5.2','1.0.0','1.0.0-beta0008','1.0.0-beta0005')
+            } else {
+                $Versions = @('3.5.0', '3.4.5', '3.4.4', '3.4.3', '3.4.2', '3.4.1', '3.4.0', '3.3.0', '3.2.0', '3.1.1', '3.1.0', '3.0.2', '3.0.1', '3.0.0', '2.2.4', '2.2.3', '2.2.2', '2.2.1', '2.2.0', '2.1.3', '2.1.2', '2.1.1', '2.1.0', '2.0.1', '2.0.0', '1.2.0', '1.1.5', '1.1.4', '1.1.3', '1.1.2', '1.1.1', '1.1.0', '1.0.4', '1.0.3', '1.0.2', '1.0.1', '1.0.0')
+            }
             foreach ($Module in $Name) {
                 foreach ($Repo in @(
-                        [PSCustomObject]@{Name = "Untrusted Fake Repo"; SourceLocation = "https://www.myget.org/F/fireeye/api/v2" }
+                        [PSCustomObject]@{Name = "Untrusted Fake Repo"; SourceLocation = "https://www.myget.org/F/aspnet-contrib/api/v2" }
                         [PSCustomObject]@{Name = "Trusted Fake Repo"; SourceLocation = "https://www.myget.org/F/aspnetwebstacknightly/api/v2" }
                         [PSCustomObject]@{Name = "PSGallery"; SourceLocation = "https://www.powershellgallery.com/api/v2" }
                     ).Where{ -not $Repository -or $_.SourceLocation -in $Repository -or $_.Name -in $Repository }) {
@@ -50,20 +54,21 @@ Describe "FindModuleVersion calls Find-Module and filters based on the VersionRa
             }
             "PoshCode"      = @{
                 Version    = "3.0.*"
-                Repository = "https://www.myget.org/F/fireeye/api/v2"
+                Repository = "https://www.myget.org/F/aspnet-contrib/api/v2"
             }
+            "Previews"      = "[3.0-alpha,3.1)"
         }'
 
         $Result["Output"] = InModuleScope RequiredModules { ImportRequiredModulesFile TestDrive:\RequiredModules.psd1 | FindModuleVersion }
 
         # If this fails, I need the error to help me understand what broke
-        if ($Result["Output"].Count -ne 4) {
-            throw "$($Result["Output"].Length) Output (expected 4).`n$(($Result["Output"] | ForEach-Object { $_.GetType().FullName }) -join "`n" )"
+        if ($Result["Output"].Count -ne 5) {
+            throw "$($Result["Output"].Length) Output (expected 5).`n$(($Result["Output"] | ForEach-Object { $_.PSTypeNames[0] }) -join "`n" )"
         }
     }
 
     It "Returns a value for each module (in order)" {
-        $Result["Output"].Name | Should -Be "PowerShellGet", "Configuration", "ModuleBuilder", "PoshCode"
+        $Result["Output"].Name | Should -Be "PowerShellGet", "Configuration", "ModuleBuilder", "PoshCode","Previews"
     }
 
     It "Returns the highest version (3.5.0) for PowerShellGet = '1.0.0'" {
@@ -90,6 +95,12 @@ Describe "FindModuleVersion calls Find-Module and filters based on the VersionRa
         $Required.Version | Should -Be "3.0.2"
     }
 
+    It "Returns pre-releases when you specify a label for Previews = '[3.0-alpha, 3.1)'" {
+        $Required = $Result["Output"].Where{ $_.Name -eq "Previews" }
+        $Required.Count | Should -Be 1
+        $Required.Version | Should -Be "3.1.0-AOP01"
+    }
+
     It "Returns the first trusted result if the repository isn't specified" {
         $Required = $Result["Output"].Where{ $_.Name -eq "PowerShellGet" }
         $Required.RepositorySourceLocation | Should -Be "https://www.myget.org/F/aspnetwebstacknightly/api/v2"
@@ -105,7 +116,7 @@ Describe "FindModuleVersion calls Find-Module and filters based on the VersionRa
 
     It "Returns the untrusted respository only when it's not available from a trusted repository" {
         $Required = $Result["Output"].Where{ $_.Name -eq "PoshCode" }
-        $Required.RepositorySourceLocation | Should -Be "https://www.myget.org/F/fireeye/api/v2"
+        $Required.RepositorySourceLocation | Should -Be "https://www.myget.org/F/aspnet-contrib/api/v2"
         # And it warns when that happens
         Assert-MockCalled Write-Warning -ParameterFilter {
             $Message -Match "'PoshCode' with version '3.0.2' found in untrusted repository"

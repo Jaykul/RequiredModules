@@ -57,10 +57,10 @@ Describe "GetModuleVersion calls Get-Module and filters based on the VersionRang
         $Output.Name | Should -Contain "ModuleBuilder"
     }
 
-    It "Returns the highest version (3.5.0) for PowerShellGet = '1.0.0'" {
+    It "Returns the highest version (3.4.0) in the first folder, for PowerShellGet = '1.0.0'" {
         $Required = $Result["Output"].Where{ $_.Name -eq "PowerShellGet" }
         $Required.Count | Should -Be 1
-        $Required.Version | Should -Be "3.5.0"
+        $Required.Version | Should -Be "3.4.0"
     }
 
     It "Returns the highest below 2.0 (1.0.1) for Configuration = '[1.0.0,2.0)'" {

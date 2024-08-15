@@ -22,7 +22,7 @@ filter FindModuleVersion {
         [Parameter(ValueFromPipelineByPropertyName, Mandatory)]
         [NuGet.Versioning.VersionRange]$Version,
 
-        # Set to allow pre-release versions (defaults to tru if either the minimum or maximum are a pre-release, false otherwise)
+        # Set to allow pre-release versions (defaults to true if either the minimum or maximum are a pre-release, false otherwise)
         [switch]$AllowPrerelease = $($Version.MinVersion.IsPreRelease, $Version.MaxVersion.IsPreRelease -contains $True),
 
         # A specific repository to fetch this particular module from
@@ -47,7 +47,7 @@ filter FindModuleVersion {
     }
     process {
         Write-Progress "Searching PSRepository for '$Name' module with version '$Version'" -Id 1 -ParentId 0
-        Write-Verbose  "Searching PSRepository for '$Name' module with version '$Version'$(if($Repository) { " in $Repository" })$(if($Credential) { " with credentials for " + $Credential.UserName })"
+        Write-Verbose  "Searching PSRepository for '$Name' module with version '$Version' -AllowPrerelease:$AllowPrerelease $(if($Repository) { " in $Repository" })$(if($Credential) { " with credentials for " + $Credential.UserName })"
         $ModuleParam = @{
             Name = $Name
             Verbose = $false
@@ -55,6 +55,13 @@ filter FindModuleVersion {
         }
         # AllowPrerelease requires modern PowerShellGet
         if ((Get-Module PowerShellGet).Version -ge "1.6.0") {
+            # The default value for this doesn't get recalculated for pipeline input
+            if (!$PSBoundParameters.ContainsKey("AllowPrerelease")) {
+                $AllowPrerelease = $($Version.MinVersion.IsPreRelease, $Version.MaxVersion.IsPreRelease -contains $True)
+                if ($AllowPrerelease) {
+                    Write-Verbose "Allowing pre-release modules because of $Version"
+                }
+            }
             $ModuleParam.AllowPrerelease = $AllowPrerelease
         } elseif($AllowPrerelease) {
             Write-Warning "Installing pre-release modules requires PowerShellGet 1.6.0 or later. Please add that at the top of your RequiredModules!"

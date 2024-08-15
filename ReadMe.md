@@ -26,6 +26,10 @@ The `Install-RequiredModule` command parses a hashtable from a file (named `Requ
 
 ## Latest Changes
 
+### 5.1.1 Fixes support for prerelease versions
+
+You can use ranges like `[1.0.0-a, 2.0.0-a)` to specify a range that _allows_ prerelease versions. Having _any_ pre-release label in either the minimum or maximum version will allow pre-release versions. This means that if you want to **exclude** pre-release versions of a future breaking change release, you should specify the maximum (exclusive) version with the "a" pre-release tag, like `2.0.0-a)` which is the lowest alphanumeric version, and not just `2.0.0)` -- this is because 2.0.0-beta is a _lower version number_ than 2.0.0.
+
 ### 5.1.0 Supports Upgrades
 
 This version supports upgrading modules you already have installed. Normally, `Install-RequiredModule` will only search online after determining that you don't have a valid version installed already. Now with the `-Upgrade` switch, it will search online first, and select the highest valid version, and _then_ check if you have _that version_ installed. If it's not already installed, it will install it.

@@ -11,6 +11,7 @@
 
             # Release Notes have to be here, so we can update them
             ReleaseNotes = '
+            5.1.1 Fix the support for prerelease versions
             5.1.0 Supports Upgrading Modules
                 - Added -Upgrade to allow searching for newer versions of installed modules while still enforcing the version range
                 - Includes a warning when in -Upgrade mode, if there is a newer version that will not be installed because of the version range
