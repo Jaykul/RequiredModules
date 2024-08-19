@@ -13,7 +13,7 @@ Describe "Install-RequiredModule" {
         } -ModuleName RequiredModules
 
         $PreRegisteredRepositories = Get-PSRepository
-        Register-PSRepository -Name "Untrusted Fake Repo" -SourceLocation "https://www.myget.org/F/fireeye/api/v2" -InstallationPolicy Untrusted
+        Register-PSRepository -Name "Untrusted Fake Repo" -SourceLocation "https://www.myget.org/F/aspnet-contrib/api/v2" -InstallationPolicy Untrusted
         Register-PSRepository -Default -InstallationPolicy Trusted 2>$null
 
 
@@ -23,7 +23,7 @@ Describe "Install-RequiredModule" {
             foreach ($Module in $Name) {
                 $Repos = @(
                         [PSCustomObject]@{Name = "PSGallery"; SourceLocation = "https://www.powershellgallery.com/api/v2" }
-                        [PSCustomObject]@{Name = "Untrusted Fake Repo"; SourceLocation = "https://www.myget.org/F/fireeye/api/v2" }
+                        [PSCustomObject]@{Name = "Untrusted Fake Repo"; SourceLocation = "https://www.myget.org/F/aspnet-contrib/api/v2" }
                     ).Where{ -not $Repository -or $_.SourceLocation -in $Repository -or $_.Name -in $Repository }
 
                 if (!$Repos) {
@@ -145,7 +145,7 @@ Describe "Install-RequiredModule" {
                 "Configuration"    = "[1.0.1,2.0)"
                 "Pester"           = "*"
                 "PSScriptAnalyzer" = @{
-                    Repository = "https://www.myget.org/F/fireeye/api/v2"
+                    Repository = "https://www.myget.org/F/aspnet-contrib/api/v2"
                     Version    = "1.*"
                 }
             }

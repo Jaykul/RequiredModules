@@ -181,9 +181,9 @@ function Install-RequiredModule {
         $Modules | GetModuleVersion -OV InstalledModules | Import-Module -Passthru:(!$Quiet) -Verbose:$false -Scope Global
     } elseif ($InstallErrors) {
         Write-Warning "Module import skipped because of errors. `nSee error details in `$IRM_InstallErrors`nSee required modules in `$IRM_RequiredModules`nSee installed modules in `$IRM_InstalledModules"
-        $global:IRM_InstallErrors = $InstallErrors
-        $global:IRM_RequiredModules = $Modules
-        $global:IRM_InstalledModules = $InstalledModules
+        Set-Variable -Scope Global -Name IRM_InstallErrors -Value $InstallErrors
+        Set-Variable -Scope Global -Name IRM_RequiredModules -Value $Modules
+        Set-Variable -Scope Global -Name IRM_InstalledModules -Value $InstalledModules
     } elseif(!$Quiet) {
         Write-Warning "Module import skipped"
     }
