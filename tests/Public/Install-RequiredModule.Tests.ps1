@@ -52,7 +52,7 @@ Describe "Install-RequiredModule" {
         Mock Write-Warning -Module RequiredModules
         Mock Install-Module -ModuleName RequiredModules
         Mock Save-Module -ModuleName RequiredModules
-        Mock AddPSModulePath -ModuleName RequiredModules
+        Mock AddPSModulePath -ModuleName RequiredModules { $Path }
 
         # ONLY return true if we're checking that the install succeeded
         Mock GetModuleVersion { (Get-PSCallStack) -match "InstallModuleVersion" } -ModuleName RequiredModules
@@ -164,7 +164,7 @@ Describe "Install-RequiredModule" {
         }
 
         It "Supports installing into any file path" {
-            Install-RequiredModule @{ "PowerShellGet" = "1.0.0" } -Quiet -Destination TestDrive:\
+            Install-RequiredModule @{ "PowerShellGet" = "1.0.0" } -Quiet -Debug -Verbose -Destination TestDrive:\
 
             Assert-MockCalled AddPSModulePath -Module RequiredModules -ParameterFilter {
                 $Path -eq "TestDrive:\"
