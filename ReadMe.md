@@ -1,14 +1,17 @@
 # Install Required Modules for PowerShell Development Projects
 
-This repository is for the `Install-RequiredModule` script you can find on the PowerShell Gallery. It was meant as a tool for developers, so you can put a `RequiredModules.psd1` file in a repository and in just two steps, install all of the modules you need, whether interactively on a dev box, or in a CI build script:
+Although it's only superficially compatible with this module (and PowerShelLGet) you may want to have a look at [JustinGrote/ModuleFast](https://github.com/JustinGrote/ModuleFast), which is a re-implementation of installing Powershell modules from scratch. Without the dependency on PowerShellGet, it goes _much_ faster, and even uses a v3 nuget feed cache of the PowerShell gallery.
 
+## Install-RequiredModule
+
+This repository is for the `Install-RequiredModule` script you can find on the PowerShell Gallery. It was meant as a tool for developers, so you can just put a `RequiredModules.psd1` file in a repository and in just two steps, install all of the modules you need, whether interactively on a dev box, or in a CI build script:
 
 ```PowerShell
 Install-Script Install-RequiredModule
 Install-RequiredModule
 ```
 
-The `Install-RequiredModule` command parses a hashtable from a file (named `RequiredModules.psd1` by default, but you can pass a path to any file name) or on the command-line. The format of the RequiredModules hashtable specifies the module name and version, using [NuGet's version range syntax](https://docs.microsoft.com/en-us/nuget/concepts/package-versioning#version-ranges-and-wildcards). It also supports specifying the repository (either the URL or the registered name). Some examples:
+The `Install-RequiredModule` command parses a hashtable and calls the (old) built-in PowerShellGet module to actually do the installation. It supports all current versions of PowerShell (including the legacy Windows PowerShell). It takes a hash table of module names to version _ranges_. By default, it reads a file named `RequiredModules.psd1` -- but you can pass a hash table at the command-line, or specify any file name you like. The format of the RequiredModules hashtable specifies the module name and version. There is also support for specifying custom repositories per-module (including by specifying the URL, so you don't have to have the repository registered ahead of time). Some examples:
 
 ```PowerShell
 @{
@@ -21,8 +24,7 @@ The `Install-RequiredModule` command parses a hashtable from a file (named `Requ
 }
 ```
 
-> NOTE: We're using NuGet's syntax for version ranges because the PowerShell Gallery uses NuGet, and PowerShellGet wraps it. Their versions use square braces to mean matches including the number, and round parenthesis to exclude it. There's support for wildcards and ranges, etc. See [NuGet's documentation](https://docs.microsoft.com/en-us/nuget/concepts/package-versioning#version-ranges-and-wildcards) for more details.
-
+> NOTE: We're using NuGet's syntax for version ranges because the PowerShell Gallery uses NuGet, and PowerShellGet wraps it. Their versions use square braces to mean matches which including the specified number, and round parenthesis to exclude it. There's also support for wildcards and ranges, etc. See [NuGet's documentation](https://docs.microsoft.com/en-us/nuget/concepts/package-versioning#version-ranges-and-wildcards) for more details.
 
 ## Latest Changes
 
@@ -58,7 +60,6 @@ Remember, Install-RequiredModule does not explicitly require PowerShellGet. Powe
 ## Missing Functionality
 
 - We need to handle PowerShellGet (and PackageManagement) specially. If they are in the list, install them first AND import them. This would allow clean environments to install pre-release modules.
-
 
 ## Contributing
 
