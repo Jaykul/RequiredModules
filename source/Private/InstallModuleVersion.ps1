@@ -41,7 +41,7 @@ filter InstallModuleVersion {
         [PSCredential]$Credential
     )
     Write-Progress "Installing module '$($Name)' with version '$($Version)'$(if($Repository){ " from $Repository" })"
-    Write-Verbose "Installing module '$($Name)' with version '$($Version)'$(if($Repository){ " from $Repository" })"
+    Write-Verbose "Installing module '$($Name)' to '$($Destination)' with version '$($Version)'$(if($Repository){ " from $Repository" })"
     Write-Verbose "ConfirmPreference: $ConfirmPreference"
     $ModuleOptions = @{
         Name               = $Name
